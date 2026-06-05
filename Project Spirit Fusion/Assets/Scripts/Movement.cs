@@ -1,69 +1,74 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
 
 public class Movement : MonoBehaviour
 {
-    public float speed = 5f;
-    private bool isGrounded;
+    public float speed = 8f;
 
-    private Vector2 direction;
-    private Vector2 velocity;
-    private Vector2 position;
+    [Header("Jump")]
+    public float jumpForce = 14f;
+    public float lowJumpMultiplier = 5f;
+    public float gravityScale = 4f;
+    public float fallMultiplier = 6f;
 
-    private Vector2 screenBounds;
+    private float moveInput;
+    private bool jumpPressed;
+    private bool jumpHeld;
 
     private Rigidbody2D rb;
 
-
     void Start()
     {
-        screenBounds.y = Camera.main.orthographicSize;
-        screenBounds.x = screenBounds.y * Camera.main.aspect;
-
         rb = GetComponent<Rigidbody2D>();
-    }
 
+        rb.gravityScale = gravityScale;
+        rb.linearDamping = 0f;
+    }
 
     void Update()
     {
-        direction = Vector2.zero;
+        moveInput = 0f;
 
+        if (Keyboard.current.aKey.isPressed)
+            moveInput = -1f;
+        else if (Keyboard.current.dKey.isPressed)
+            moveInput = 1f;
 
         if (Keyboard.current.wKey.wasPressedThisFrame)
-        {
-            
-            direction.y += 1f;
-           
-        }
-    
-                
-        if (Keyboard.current.aKey.isPressed)
-            direction.x -= 1f;
-        if (Keyboard.current.dKey.isPressed)
-            direction.x += 1f;
+            jumpPressed = true;
 
-
-        direction = direction.normalized;
+        jumpHeld = Keyboard.current.wKey.isPressed;
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
-        velocity = speed * direction;
+        
+        rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
 
-        position = rb.position + velocity  * Time.deltaTime;
+        // Jump
+        if (jumpPressed && IsGrounded())
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            jumpPressed = false;
+        }
 
-        if (position.x > screenBounds.x)
-            position.x = -screenBounds.x;
-        else if (position.x < -screenBounds.x)
-            position.x = screenBounds.x;
-
-        if (position.y > screenBounds.y)
-            position.y = -screenBounds.y;
-        else if (position.y < -screenBounds.y)
-            position.y = screenBounds.y;
+        if(rb.linearVelocity.y > 0f && !jumpHeld)
+        {
+            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
+        }
 
 
+        
+        if (rb.linearVelocity.y < 0)
+        {
+            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
+        }
+    }
 
-        rb.MovePosition(position);
+    bool IsGrounded()
+    {
+        
+        return Mathf.Abs(rb.linearVelocity.y) < 0.01f;
     }
 }
