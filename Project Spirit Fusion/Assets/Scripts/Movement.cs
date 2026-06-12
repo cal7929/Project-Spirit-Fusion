@@ -76,7 +76,7 @@ public class Movement : MonoBehaviour
         }
 
         //Sets jump velocity after jumping for standard fighting game rules
-        if(rb.linearVelocity.y > 0f && !jumpHeld)
+        if (rb.linearVelocity.y > 0f && !jumpHeld)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
         }
@@ -95,6 +95,6 @@ public class Movement : MonoBehaviour
 
     bool IsGrounded()
     {
-        return Mathf.Abs(rb.linearVelocity.y) < 0.05f; //0.01f
+        return Mathf.Abs(rb.linearVelocity.y) < 0.01f; //0.05f
     }
 }
