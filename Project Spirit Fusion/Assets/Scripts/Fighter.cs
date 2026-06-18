@@ -1,10 +1,5 @@
-using System.ComponentModel;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
-//Like with attack, once we start making distinct characters,
-//this will become abstract. All fighters will be children of this one.
 
 public enum FighterState
 {
@@ -25,36 +20,42 @@ public class Fighter : MonoBehaviour
 
     [Header("Fighter State")]
     public FighterState currentState = FighterState.Idle;
-    public bool isBlocking = false;
 
     [Header("Facing Direction")]
-    [SerializeField]
-    public int facingDir;
+    public int facingDir = 1;
 
     private Transform opponentDir;
 
-    //Hitsun and knockdown, read internally
+    //Timers, read internally
     private float hitstunTimer = 0f;
+    private float blockstunTimer = 0f;
     private float knockdownTimer = 0f;
 
     private Rigidbody2D rb;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody2D>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         UpdateFacing();
-        
+
         if (currentState == FighterState.Hitstun)
         {
             hitstunTimer -= Time.deltaTime;
             if (hitstunTimer <= 0f)
+            {
+                SetState(FighterState.Idle);
+            }
+        }
+
+        if (currentState == FighterState.Blockstun)
+        {
+            blockstunTimer -= Time.deltaTime;
+            if (blockstunTimer <= 0f)
             {
                 SetState(FighterState.Idle);
             }
@@ -72,42 +73,34 @@ public class Fighter : MonoBehaviour
 
     public void TakeDamage(int damage, float hitStun, Vector2 knockback)
     {
-        //Reduce health by attack damage, prevents it from dropping below 0.
-        if (!IsBlocking())
-        {
-            currentHealth -= damage;
-            currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        if (currentState == FighterState.Dead) return;
 
-            //Apply's hitstun
-            SetState(FighterState.Hitstun);
-            hitstunTimer = hitStun;
-
-            Debug.Log(gameObject.name + " took " + damage + " damage. HP: " + currentHealth);
-        }
-        else
+        if (IsBlocking())
         {
+            //Blocked hits deal no damage, shorter stun, softer pushback. (chip damage from specials will be implemented later)
+            SetState(FighterState.Blockstun);
+            blockstunTimer = hitStun * 0.5f;
+            rb.linearVelocity = knockback * 0.5f;
+
             Debug.Log(gameObject.name + " blocked " + damage + " damage. HP: " + currentHealth);
+            return;
         }
 
-        //Manages the fighter dying (may adjust for a more in-depth system later)
+        currentHealth -= damage;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        Debug.Log(gameObject.name + " took " + damage + " damage. HP: " + currentHealth);
+
         if (currentHealth <= 0)
         {
             SetState(FighterState.Dead);
             rb.linearVelocity = Vector2.zero;
             Debug.Log(gameObject.name + "'s spirit has been slain...");
-
-            //Failsafe in case Clamp doesn't work or it bugs
-            if (currentHealth < 0)
-            {
-                currentHealth = 0;
-            }
-
             return;
         }
 
-        
-
-        //Apply's physics knockback
+        SetState(FighterState.Hitstun);
+        hitstunTimer = hitStun;
         rb.linearVelocity = knockback;
     }
 
@@ -120,17 +113,10 @@ public class Fighter : MonoBehaviour
     //Convenience check used by Movement and Attack
     public bool CanAct()
     {
-        if ( currentState != FighterState.Hitstun 
-            && currentState != FighterState.Knockdown 
-            && currentState != FighterState.Dead)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-        
+        return currentState != FighterState.Hitstun
+            && currentState != FighterState.Blockstun
+            && currentState != FighterState.Knockdown
+            && currentState != FighterState.Dead;
     }
 
     public void SetOpponent(Transform opponentTransform)
@@ -140,10 +126,7 @@ public class Fighter : MonoBehaviour
 
     void UpdateFacing()
     {
-        if (opponentDir == null)
-        {
-            return;
-        }
+        if (opponentDir == null) return;
 
         //1 = Facing Right, -1 = Facing Left
         if (opponentDir.position.x > transform.position.x)
@@ -160,17 +143,14 @@ public class Fighter : MonoBehaviour
 
     public bool IsBlocking()
     {
-        if (opponentDir.position.x > transform.position.x && Keyboard.current.aKey.isPressed)
-        {
-            return true;
-        }
-        else if (opponentDir.position.x < transform.position.x && Keyboard.current.dKey.isPressed)
-        {
-            return false;
-        }
-        else
-        {
-            return false;
-        }
+        if (opponentDir == null) return false;
+
+        bool opponentIsRight = opponentDir.position.x > transform.position.x;
+
+        //Blocking = holding away from the opponent (holding "back").
+        if (opponentIsRight && Keyboard.current.aKey.isPressed) return true;
+        if (!opponentIsRight && Keyboard.current.dKey.isPressed) return true;
+
+        return false;
     }
 }

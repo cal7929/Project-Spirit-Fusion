@@ -1,34 +1,42 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Hitbox : MonoBehaviour
 {
-    //Reference to the attack script that holds all the important statistical data
-    private Attack sourceAttack;
-    
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private AttackData attackData;
+    private Fighter owner;
+    private readonly HashSet<Fighter> hitTargets = new HashSet<Fighter>();
+
+    //Called by AttackController when this attack's active frames begin.
+    public void Activate(AttackData data, Fighter ownerFighter)
     {
-        sourceAttack = GetComponentInParent<Attack>();
+        attackData = data;
+        owner = ownerFighter;
+        hitTargets.Clear();
+        gameObject.SetActive(true);
+    }
+
+    //Called by AttackController when active frames end.
+    public void Deactivate()
+    {
+        gameObject.SetActive(false);
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        //Don't hit ourselves
-        if (other.gameObject == sourceAttack.gameObject) return;
-
         Fighter targetFighter = other.GetComponent<Fighter>();
 
-        //Only register hits on fighters
-        if (targetFighter == null)
-        {
-            return;
-        }
+        //Ignore non-fighters, yourself, and anything already hit this activation,
+        //(prevents it from hitting multiple times which may be something we want for certain attacks).
+        if (targetFighter == null) return;
+        if (targetFighter == owner) return;
+        if (hitTargets.Contains(targetFighter)) return;
 
-        //Calculates knockback direction to push the defender away from the attacker horizontally
-        Vector2 knockbackDir = new Vector2(sourceAttack.transform.localScale.x, 0f).normalized;
-        Vector2 knockback = knockbackDir * sourceAttack.hitKnockback;
+        hitTargets.Add(targetFighter);
 
-        //Perform attack effects
-        targetFighter.TakeDamage(sourceAttack.damage, sourceAttack.hitstunDuration, knockback);
+        Vector2 knockbackDir = new Vector2(owner.facingDir, 0f).normalized;
+        Vector2 knockback = knockbackDir * attackData.hitKnockback;
+
+        targetFighter.TakeDamage(attackData.damage, attackData.hitstunDuration, knockback);
     }
 }
