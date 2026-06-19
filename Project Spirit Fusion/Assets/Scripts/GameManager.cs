@@ -1,7 +1,5 @@
 using UnityEngine;
 
-//Most of this script won't be used in our demo, as we are making a training mode basically.
-//However if we want to implement actual gameplay down the line, much of this can be uncommented.
 public enum MatchState
 {
     RoundStart,
@@ -36,7 +34,7 @@ public class GameManager : MonoBehaviour
     {
         if (fighterA == null || fighterB == null)
         {
-            Debug.LogError("GameManager is missing a fighter reference - assign both in the Inspector.");
+            Debug.LogError("GameManager is missing a fighter reference, assign both in the Inspector.");
             enabled = false;
             return;
         }
@@ -52,12 +50,12 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        
         switch (currentState)
         {
             case MatchState.RoundStart:
                 TickRoundStart();
                 break;
+                /*
             case MatchState.Fighting:
                 TickFighting();
                 break;
@@ -66,8 +64,8 @@ public class GameManager : MonoBehaviour
                 break;
             case MatchState.MatchEnd:
                 break;
+                */
         }
-        
     }
     
     void TickRoundStart()

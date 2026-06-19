@@ -19,7 +19,7 @@ public class AttackData
     public float hitstunDuration = 0.4f;
     public float hitKnockback = 2f;
 
-    [Header("Frame Data (seconds, not frames yet - fine for now)")]
+    [Header("Frame Data (in seconds, should be in actual frames down the line)")]
     public float startupTime = 0.05f;
     public float activeTime = 0.1f;
     public float recoveryTime = 0.2f;
