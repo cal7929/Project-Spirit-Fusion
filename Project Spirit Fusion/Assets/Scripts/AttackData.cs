@@ -1,26 +1,40 @@
 using UnityEngine;
 
-//This is a data container, not a MonoBehaviour.
-//One of these exists for each attack to hold its stats and values.
-//Gets assigned in the Inspector on AttackController.
-//It is more efficient to use a data container apparently for this type of thing than a MonoBehavior
-//I had to look up how to set this up, its not hard at all to understand. (I also learned how to use tooltips, very useful)
+//All timing values are in frames at 60fps.
 [System.Serializable]
 public class AttackData
 {
     [Header("Attack Name")]
-    public string attackName = "Light";
+    public string attackName;
 
     [Tooltip("The object that acts as this attack's hitbox. Should have a trigger Collider2D and a Hitbox component, and start disabled in the scene.")]
     public GameObject hitboxObject;
 
     [Header("Damage")]
-    public int damage = 10;
-    public float hitstunDuration = 0.4f;
-    public float hitKnockback = 2f;
+    public int damage;
 
-    [Header("Frame Data (in seconds, should be in actual frames down the line)")]
-    public float startupTime = 0.05f;
-    public float activeTime = 0.1f;
-    public float recoveryTime = 0.2f;
+    [Tooltip("How many frames the opponent is locked in hitstun on hit.")]
+    public int hitstunFrames;
+
+    public float hitKnockback;
+
+    [Header("Frame Data (frames at 60fps)")]
+    [Tooltip("Frames before the hitbox becomes active. Lower = faster attack.")]
+    public int startupFrames;
+
+    [Tooltip("Frames the hitbox is active and can deal damage.")]
+    public int activeFrames;
+
+    [Tooltip("Frames of recovery after active. The fighter is vulnerable here.")]
+    public int recoveryFrames;
+
+    [Header("Cancel")]
+    [Tooltip("How many frames INTO recovery this attack can still be cancelled into the next in the chain (L>M>H only). 0 = active frames only.")]
+    public int cancelWindowFrames;
+
+    // Derived frame thresholds used by AttackController to drive phase transitions.
+    public int ActiveStartFrame => startupFrames;
+    public int ActiveEndFrame => startupFrames + activeFrames;
+    public int CancelEndFrame => startupFrames + activeFrames + cancelWindowFrames;
+    public int TotalFrames => startupFrames + activeFrames + recoveryFrames;
 }

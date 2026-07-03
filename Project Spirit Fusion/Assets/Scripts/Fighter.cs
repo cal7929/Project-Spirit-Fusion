@@ -5,6 +5,7 @@ public enum FighterState
 {
     Idle,
     Moving,
+    Crouching,
     Attacking,
     Hitstun,
     Blockstun,
@@ -24,12 +25,15 @@ public class Fighter : MonoBehaviour
     [Header("Facing Direction")]
     public int facingDir = 1;
 
+    //Set by Movement every frame so other systems can check airborne status.
+    [HideInInspector] public bool isAirborne = false;
+
     private Transform opponentDir;
 
-    //Timers, read internally
-    private float hitstunTimer = 0f;
-    private float blockstunTimer = 0f;
-    private float knockdownTimer = 0f;
+    //Frame-based stun timers. Decremented in FixedUpdate, one tick per physics step, which matches how AttackController counts frames.
+    private int hitstunFrames = 0;
+    private int blockstunFrames = 0;
+    private int knockdownFrames = 0;
 
     private Rigidbody2D rb;
 
@@ -42,47 +46,45 @@ public class Fighter : MonoBehaviour
     void Update()
     {
         UpdateFacing();
+    }
 
+    void FixedUpdate()
+    {
         if (currentState == FighterState.Hitstun)
         {
-            hitstunTimer -= Time.deltaTime;
-            if (hitstunTimer <= 0f)
-            {
+            hitstunFrames--;
+            if (hitstunFrames <= 0)
                 SetState(FighterState.Idle);
-            }
         }
 
         if (currentState == FighterState.Blockstun)
         {
-            blockstunTimer -= Time.deltaTime;
-            if (blockstunTimer <= 0f)
-            {
+            blockstunFrames--;
+            if (blockstunFrames <= 0)
                 SetState(FighterState.Idle);
-            }
         }
 
         if (currentState == FighterState.Knockdown)
         {
-            knockdownTimer -= Time.deltaTime;
-            if (knockdownTimer <= 0f)
-            {
+            knockdownFrames--;
+            if (knockdownFrames <= 0)
                 SetState(FighterState.Idle);
-            }
         }
     }
 
-    public void TakeDamage(int damage, float hitStun, Vector2 knockback)
+    //Chip damage from specials will be in here later.
+    public void TakeDamage(int damage, int hitstun, Vector2 knockback)
     {
         if (currentState == FighterState.Dead) return;
 
         if (IsBlocking())
         {
-            //Blocked hits deal no damage, shorter stun, softer pushback. (chip damage from specials will be implemented later)
+            //Blocked hits: no damage, half hitstun as blockstun, softer pushback.
             SetState(FighterState.Blockstun);
-            blockstunTimer = hitStun * 0.5f;
+            blockstunFrames = hitstun / 2;
             rb.linearVelocity = knockback * 0.5f;
 
-            Debug.Log(gameObject.name + " blocked " + damage + " damage. HP: " + currentHealth);
+            Debug.Log(gameObject.name + " blocked. HP: " + currentHealth);
             return;
         }
 
@@ -100,17 +102,17 @@ public class Fighter : MonoBehaviour
         }
 
         SetState(FighterState.Hitstun);
-        hitstunTimer = hitStun;
+        hitstunFrames = hitstun;
         rb.linearVelocity = knockback;
     }
 
-    //Only method that can change state to prevent accidental changes
+    //Only method that can change state to prevent accidental changes.
     public void SetState(FighterState newState)
     {
         currentState = newState;
     }
 
-    //Convenience check used by Movement and Attack
+    //Useful checking method for other scripts
     public bool CanAct()
     {
         return currentState != FighterState.Hitstun
@@ -147,7 +149,7 @@ public class Fighter : MonoBehaviour
 
         bool opponentIsRight = opponentDir.position.x > transform.position.x;
 
-        //Blocking = holding away from the opponent (holding "back").
+        //Always block when moving away from your opponent
         if (opponentIsRight && Keyboard.current.aKey.isPressed) return true;
         if (!opponentIsRight && Keyboard.current.dKey.isPressed) return true;
 

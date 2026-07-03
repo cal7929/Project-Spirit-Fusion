@@ -13,12 +13,17 @@ public class GameManager : MonoBehaviour
     [Header("Fighters")]
     public Fighter fighterA;
     public Fighter fighterB;
-    
+
     [Header("Round Settings")]
     public float roundTime = 99f;
     public int roundsToWin = 2;
-    public float roundStartDelay = 1f;  
-    public float roundEndDelay = 2f;     
+    public float roundStartDelay = 1f;
+    public float roundEndDelay = 2f;
+
+    //Prevents fighters from colliding with eachother in akward ways, also prevents them from standing on eachother
+    [Header("Pushbox Settings")]
+    public float pushboxWidth = 1f;
+    public float pushboxHeightTolerance = 1.5f;
 
     [Header("Runtime State")]
     public MatchState currentState = MatchState.RoundStart;
@@ -29,6 +34,10 @@ public class GameManager : MonoBehaviour
     private Vector3 startPosA;
     private Vector3 startPosB;
     private float stateTimer;
+
+    //Cached for pushbox use in FixedUpdate (avoids GetComponent every frame).
+    private Rigidbody2D rbA;
+    private Rigidbody2D rbB;
 
     void Start()
     {
@@ -41,6 +50,13 @@ public class GameManager : MonoBehaviour
 
         fighterA.SetOpponent(fighterB.transform);
         fighterB.SetOpponent(fighterA.transform);
+
+        //Fighters body colliders should not physically interact with each other.
+        //Hits are still detected by the separate hitbox system.
+        IgnoreCollisionBetween(fighterA, fighterB);
+
+        rbA = fighterA.GetComponent<Rigidbody2D>();
+        rbB = fighterB.GetComponent<Rigidbody2D>();
 
         startPosA = fighterA.transform.position;
         startPosB = fighterB.transform.position;
@@ -55,7 +71,6 @@ public class GameManager : MonoBehaviour
             case MatchState.RoundStart:
                 TickRoundStart();
                 break;
-                /*
             case MatchState.Fighting:
                 TickFighting();
                 break;
@@ -63,11 +78,16 @@ public class GameManager : MonoBehaviour
                 TickRoundEnd();
                 break;
             case MatchState.MatchEnd:
+                //Once more detail is implemented things will go here (graphics etc.)
                 break;
-                */
         }
     }
-    
+
+    void FixedUpdate()
+    {
+        ResolvePushbox();
+    }
+
     void TickRoundStart()
     {
         stateTimer -= Time.deltaTime;
@@ -114,12 +134,12 @@ public class GameManager : MonoBehaviour
         else if (fighterA.currentHealth > fighterB.currentHealth)
         {
             roundsWonA++;
-            Debug.Log(fighterA.name + " wins the round.");
+            Debug.Log("Time's Up, " + fighterA.name + " wins the round.");
         }
         else if (fighterB.currentHealth > fighterA.currentHealth)
         {
             roundsWonB++;
-            Debug.Log(fighterB.name + " wins the round.");
+            Debug.Log("Time's Up, " + fighterB.name + " wins the round.");
         }
         else
         {
@@ -165,8 +185,43 @@ public class GameManager : MonoBehaviour
         if (rb != null) rb.linearVelocity = Vector2.zero;
     }
 
+    //Prevents fighters from overlapping horizontally.
+    //Skips when one fighter is clearly jumping over the other (vertical gap check), or when either fighter is dead/knocked down.
+    void ResolvePushbox()
+    {
+        if (rbA == null || rbB == null) return;
+        if (fighterA.currentState == FighterState.Dead || fighterB.currentState == FighterState.Dead) return;
+        if (fighterA.currentState == FighterState.Knockdown || fighterB.currentState == FighterState.Knockdown) return;
+
+        Vector2 posA = rbA.position;
+        Vector2 posB = rbB.position;
+
+        //Skip the push if one fighter is mid-jump.
+        float verticalGap = Mathf.Abs(posA.y - posB.y);
+        if (verticalGap > pushboxHeightTolerance) return;
+
+        float horizontalGap = posB.x - posA.x;
+        float overlap = pushboxWidth - Mathf.Abs(horizontalGap);
+        if (overlap <= 0f) return;
+
+        //Push both fighters equally away from each other.
+        float pushDir = horizontalGap >= 0f ? 1f : -1f;
+        float pushAmount = overlap * 0.5f;
+
+        rbA.position = posA - new Vector2(pushDir * pushAmount, 0f);
+        rbB.position = posB + new Vector2(pushDir * pushAmount, 0f);
+    }
+
+    void IgnoreCollisionBetween(Fighter a, Fighter b)
+    {
+        Collider2D colA = a.GetComponent<Collider2D>();
+        Collider2D colB = b.GetComponent<Collider2D>();
+
+        if (colA != null && colB != null)
+            Physics2D.IgnoreCollision(colA, colB);
+    }
+
     //Disables Movement and AttackController during round start and round end
-    //pauses so neither player can act just before or after a round (normal fighting game round start/end protocol).
     void SetFightersEnabled(bool isEnabled)
     {
         SetFighterEnabled(fighterA, isEnabled);
