@@ -5,7 +5,7 @@ public class Movement : MonoBehaviour
 {
     public float speed = 8f;
 
-    [Header("Jump")]
+    [Header("Jump Stats")]
     public float jumpForce = 15f;
     public float lowJumpMultiplier = 7.5f;
     public float gravityScale = 3f;
@@ -16,7 +16,7 @@ public class Movement : MonoBehaviour
     public LayerMask groundLayer;
     public float groundCheckDistance = 0.1f;
 
-    //Will likely be reworked when sprites get added
+    //Amount to reduce hitbox by when crouching
     [Header("Crouch")]
     public float crouchScaleY = 0.5f;
 
@@ -45,7 +45,6 @@ public class Movement : MonoBehaviour
     void Update()
     {
         bool grounded = IsGrounded();
-        fighter.isAirborne = !grounded;
 
         if (!fighter.CanAct()) return;
 
@@ -77,11 +76,13 @@ public class Movement : MonoBehaviour
 
         //No jumping while crouching
         if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching)
+        {
             jumpPressed = true;
-        jumpHeld = Keyboard.current.wKey.isPressed;
+            fighter.SetState(FighterState.Jumping);
+            jumpHeld = Keyboard.current.wKey.isPressed;
+        }
 
         //Update the crouch geometry whenever the state changes.
-        //This is for convenience, once sprites get added, much of the crouching logic will change
         UpdateCrouchScale();
     }
 
@@ -91,34 +92,52 @@ public class Movement : MonoBehaviour
 
         bool grounded = IsGrounded();
 
+        //Horizontal movement
         if (grounded)
         {
             rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
 
+            //Only move if not attacking
             if (fighter.currentState != FighterState.Attacking
                 && fighter.currentState != FighterState.Crouching)
             {
-                fighter.SetState(moveInput != 0f ? FighterState.Moving : FighterState.Idle);
+                if (moveInput == 1 ||  moveInput == -1)
+                {
+                    fighter.SetState(FighterState.Moving);
+                }
+                else if (moveInput == 0)
+                {
+                    fighter.SetState(FighterState.Idle);
+                }
             }
         }
 
+        //Jumping
         if (jumpPressed && grounded)
         {
+            //launch the player
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+
+            //reset jumping so it doesn"double jump"
             jumpPressed = false;
+
             fighter.SetState(FighterState.Idle);
         }
 
+        //Jump shorter if button is tapped
         if (rb.linearVelocity.y > 0f && !jumpHeld)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
         }
 
+        //Fall faster for better fighting gasme movement
         if (rb.linearVelocity.y < 0f)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
             if (grounded)
+            {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
+            }
         }
     }
 
@@ -157,6 +176,13 @@ public class Movement : MonoBehaviour
     bool IsGrounded()
     {
         if (col == null) return false;
+
+        if (fighter.currentState == FighterState.Jumping)
+        {
+            return false;
+        }
+
+        //Check if airborne due to non-jumping reasons
         Vector2 origin = new Vector2(col.bounds.center.x, col.bounds.min.y);
         RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, groundCheckDistance, groundLayer);
         return hit.collider != null;

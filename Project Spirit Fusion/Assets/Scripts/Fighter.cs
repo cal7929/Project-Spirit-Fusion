@@ -6,6 +6,7 @@ public enum FighterState
     Idle,
     Moving,
     Crouching,
+    Jumping,
     Attacking,
     Hitstun,
     Blockstun,
@@ -13,10 +14,12 @@ public enum FighterState
     Dead
 }
 
+//Once sprites are implemented, an animation FSM will need to be added here for fighter state, as well as for attacks.
+
 public class Fighter : MonoBehaviour
 {
     [Header("Stats")]
-    public int maxHealth = 100;
+    public int maxHealth = 1000;
     public int currentHealth;
 
     [Header("Fighter State")]
@@ -25,12 +28,12 @@ public class Fighter : MonoBehaviour
     [Header("Facing Direction")]
     public int facingDir = 1;
 
-    //Set by Movement every frame so other systems can check airborne status.
-    [HideInInspector] public bool isAirborne = false;
+    //Set by Movement script every frame so other systems can check airborne status.
+    //public bool isAirborne = false;
 
     private Transform opponentDir;
 
-    //Frame-based stun timers. Decremented in FixedUpdate, one tick per physics step, which matches how AttackController counts frames.
+    //Frame-based stun timers. Decremented in FixedUpdate, one tick per physics step.
     private int hitstunFrames = 0;
     private int blockstunFrames = 0;
     private int knockdownFrames = 0;
@@ -79,14 +82,16 @@ public class Fighter : MonoBehaviour
 
         if (IsBlocking())
         {
-            //Blocked hits: no damage, half hitstun as blockstun, softer pushback.
+            //Blocked hits do no damage, half hitstun as blockstun, softer pushback.
             SetState(FighterState.Blockstun);
             blockstunFrames = hitstun / 2;
-            rb.linearVelocity = knockback * 0.5f;
+            rb.linearVelocity = knockback / 2;
 
             Debug.Log(gameObject.name + " blocked. HP: " + currentHealth);
             return;
         }
+
+        //---If attack isn't blocked---
 
         currentHealth -= damage;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
@@ -106,6 +111,20 @@ public class Fighter : MonoBehaviour
         rb.linearVelocity = knockback;
     }
 
+    //Checks if you are blocking based on opponent's direction
+    public bool IsBlocking()
+    {
+        if (opponentDir == null) return false;
+
+        bool opponentIsRight = opponentDir.position.x > transform.position.x;
+
+        //Always block when moving away from your opponent
+        if (opponentIsRight && Keyboard.current.aKey.isPressed) return true;
+        if (!opponentIsRight && Keyboard.current.dKey.isPressed) return true;
+
+        return false;
+    }
+
     //Only method that can change state to prevent accidental changes.
     public void SetState(FighterState newState)
     {
@@ -115,6 +134,7 @@ public class Fighter : MonoBehaviour
     //Useful checking method for other scripts
     public bool CanAct()
     {
+        //Fighter CAN act if...
         return currentState != FighterState.Hitstun
             && currentState != FighterState.Blockstun
             && currentState != FighterState.Knockdown
@@ -141,18 +161,5 @@ public class Fighter : MonoBehaviour
             facingDir = -1;
             transform.localScale = new Vector3(-Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
         }
-    }
-
-    public bool IsBlocking()
-    {
-        if (opponentDir == null) return false;
-
-        bool opponentIsRight = opponentDir.position.x > transform.position.x;
-
-        //Always block when moving away from your opponent
-        if (opponentIsRight && Keyboard.current.aKey.isPressed) return true;
-        if (!opponentIsRight && Keyboard.current.dKey.isPressed) return true;
-
-        return false;
     }
 }

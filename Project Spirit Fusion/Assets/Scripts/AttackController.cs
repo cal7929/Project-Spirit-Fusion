@@ -1,39 +1,62 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+//This script will be a common script that should control the light medium and hevay attacks for each fighter,
+//since all fighters share those 3 attacks plus any jumping and crouching attacks.
 public class AttackController : MonoBehaviour
 {
     //Which button strength is currently active, null when idle.
     private enum AttackStrength { Light, Medium, Heavy }
 
-    [Header("Attacks")]
-    public AttackData lightAttack;
-    public AttackData mediumAttack;
-    public AttackData heavyAttack;
+    [Header("Standing Attacks")]
+    public AttackData standLight;
+    public AttackData standMedium;
+    public AttackData standHeavy;
+
+    [Header("Crouching Attacks")]
+    public AttackData crouchLight;
+    public AttackData crouchMedium;
+    public AttackData crouchHeavy;
+
+    [Header("Jumping Attacks")]
+    public AttackData jumpLight;
+    public AttackData jumpMedium;
+    public AttackData jumpHeavy;
 
     private Fighter fighter;
 
-    private Hitbox lightHitbox;
-    private Hitbox mediumHitbox;
-    private Hitbox heavyHitbox;
+    public Hitbox standLHitbox;
+    public Hitbox standMHitbox;
+    public Hitbox standHHitbox;
+
+    public Hitbox crouchLHitbox;
+    public Hitbox crouchMHitbox;
+    public Hitbox crouchHHitbox;
+
+    public Hitbox jumpLHitbox;
+    public Hitbox jumpMHitbox;
+    public Hitbox jumpHHitbox;
 
     private AttackData currentAttack;
     private Hitbox currentHitbox;
     private AttackStrength? currentStrength; 
+
     //Counts up from 0
     private int attackFrame; 
 
     void Start()
     {
         fighter = GetComponent<Fighter>();
-        lightHitbox = CacheHitbox(lightAttack);
-        mediumHitbox = CacheHitbox(mediumAttack);
-        heavyHitbox = CacheHitbox(heavyAttack);
+        standLHitbox = CacheHitbox(standLight);
+        standMHitbox = CacheHitbox(standMedium);
+        standHHitbox = CacheHitbox(standHeavy);
     }
 
     Hitbox CacheHitbox(AttackData data)
     {
-        if (data == null || data.hitboxObject == null) return null;
+        if (data == null || data.hitboxObject == null) 
+            return null;
+
         data.hitboxObject.SetActive(false);
         return data.hitboxObject.GetComponent<Hitbox>();
     }
@@ -65,12 +88,12 @@ public class AttackController : MonoBehaviour
         {
             if (currentStrength == AttackStrength.Light && mediumPressed)
             {
-                StartAttack(mediumAttack, mediumHitbox, AttackStrength.Medium);
+                StartAttack(standMedium, standMHitbox, AttackStrength.Medium);
                 return;
             }
             if (currentStrength == AttackStrength.Medium && heavyPressed)
             {
-                StartAttack(heavyAttack, heavyHitbox, AttackStrength.Heavy);
+                StartAttack(standHeavy, standHHitbox, AttackStrength.Heavy);
                 return;
             }
         }
@@ -79,11 +102,11 @@ public class AttackController : MonoBehaviour
         if (currentAttack == null && fighter.CanAct())
         {
             if (lightPressed)
-                StartAttack(lightAttack, lightHitbox, AttackStrength.Light);
+                StartAttack(standLight, standLHitbox, AttackStrength.Light);
             else if (mediumPressed)
-                StartAttack(mediumAttack, mediumHitbox, AttackStrength.Medium);
+                StartAttack(standMedium, standMHitbox, AttackStrength.Medium);
             else if (heavyPressed)
-                StartAttack(heavyAttack, heavyHitbox, AttackStrength.Heavy);
+                StartAttack(standHeavy, standHHitbox, AttackStrength.Heavy);
         }
     }
 
