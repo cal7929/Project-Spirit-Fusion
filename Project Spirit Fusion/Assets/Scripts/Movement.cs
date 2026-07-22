@@ -68,9 +68,13 @@ public class Movement : MonoBehaviour
 
                 moveInput = 0f;
                 if (Keyboard.current.aKey.isPressed)
+                {
                     moveInput = -1f;
+                }
                 else if (Keyboard.current.dKey.isPressed)
+                {
                     moveInput = 1f;
+                }
             }
         }
 
@@ -79,8 +83,8 @@ public class Movement : MonoBehaviour
         {
             jumpPressed = true;
             fighter.SetState(FighterState.Jumping);
-            jumpHeld = Keyboard.current.wKey.isPressed;
         }
+        jumpHeld = Keyboard.current.wKey.isPressed;
 
         //Update the crouch geometry whenever the state changes.
         UpdateCrouchScale();
@@ -145,8 +149,10 @@ public class Movement : MonoBehaviour
     //This method can be removed once animations are added, this is just for the crude build we have now.
     void UpdateCrouchScale()
     {
+        //Determines whether the player should crouch based on current state
         bool shouldCrouch = fighter.currentState == FighterState.Crouching;
 
+        //If you should be crouching but aren't, start crouching
         if (shouldCrouch && !isCrouching)
         {
             isCrouching = true;
@@ -160,6 +166,7 @@ public class Movement : MonoBehaviour
             float heightDiff = (standingScale.y - crouchY) * 0.5f;
             transform.position -= new Vector3(0f, heightDiff, 0f);
         }
+        //if you shouldn't crouch but are, stop crouching
         else if (!shouldCrouch && isCrouching)
         {
             isCrouching = false;
@@ -177,12 +184,7 @@ public class Movement : MonoBehaviour
     {
         if (col == null) return false;
 
-        if (fighter.currentState == FighterState.Jumping)
-        {
-            return false;
-        }
-
-        //Check if airborne due to non-jumping reasons
+        //Check if airborne due to non-jumping reasons, creates a ray that shoots downaward to detect the ground layer
         Vector2 origin = new Vector2(col.bounds.center.x, col.bounds.min.y);
         RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, groundCheckDistance, groundLayer);
         return hit.collider != null;

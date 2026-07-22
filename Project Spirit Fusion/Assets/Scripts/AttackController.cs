@@ -13,29 +13,29 @@ public class AttackController : MonoBehaviour
     public AttackData standMedium;
     public AttackData standHeavy;
 
+    public Hitbox standLHitbox;
+    public Hitbox standMHitbox;
+    public Hitbox standHHitbox;
+
     [Header("Crouching Attacks")]
     public AttackData crouchLight;
     public AttackData crouchMedium;
     public AttackData crouchHeavy;
+
+    public Hitbox crouchLHitbox;
+    public Hitbox crouchMHitbox;
+    public Hitbox crouchHHitbox;
 
     [Header("Jumping Attacks")]
     public AttackData jumpLight;
     public AttackData jumpMedium;
     public AttackData jumpHeavy;
 
-    private Fighter fighter;
-
-    public Hitbox standLHitbox;
-    public Hitbox standMHitbox;
-    public Hitbox standHHitbox;
-
-    public Hitbox crouchLHitbox;
-    public Hitbox crouchMHitbox;
-    public Hitbox crouchHHitbox;
-
     public Hitbox jumpLHitbox;
     public Hitbox jumpMHitbox;
     public Hitbox jumpHHitbox;
+
+    private Fighter fighter;
 
     private AttackData currentAttack;
     private Hitbox currentHitbox;
@@ -47,19 +47,34 @@ public class AttackController : MonoBehaviour
     void Start()
     {
         fighter = GetComponent<Fighter>();
+        /*
         standLHitbox = CacheHitbox(standLight);
         standMHitbox = CacheHitbox(standMedium);
         standHHitbox = CacheHitbox(standHeavy);
+
+        crouchLHitbox = CacheHitbox(crouchLight);
+        crouchMHitbox = CacheHitbox(crouchMedium);
+        crouchHHitbox = CacheHitbox(crouchHeavy);
+
+        jumpLHitbox = CacheHitbox(jumpLight);
+        jumpMHitbox = CacheHitbox(jumpMedium);
+        jumpHHitbox = CacheHitbox(jumpHeavy);
+        */
     }
 
+    /*
     Hitbox CacheHitbox(AttackData data)
     {
-        if (data == null || data.hitboxObject == null) 
+        if (data == null || data.hitboxObject == null)
+        {
             return null;
+        }
 
+        //Set the hitbox to deativacte just in case, and then return its hitbox script
         data.hitboxObject.SetActive(false);
         return data.hitboxObject.GetComponent<Hitbox>();
     }
+    */
 
     //Input is read in Update so wasPressedThisFrame actually works consistently.
     void Update()
@@ -73,6 +88,7 @@ public class AttackController : MonoBehaviour
         AdvanceAttack();
     }
 
+    //-----------------Needs a rework--------------------
     void HandleInput()
     {
         bool lightPressed = Keyboard.current.jKey.wasPressedThisFrame;

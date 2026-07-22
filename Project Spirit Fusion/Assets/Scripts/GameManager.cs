@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour
     public float roundStartDelay = 1f;
     public float roundEndDelay = 2f;
 
-    //Prevents fighters from colliding with eachother in akward ways, also prevents them from standing on eachother
+    //Prevents fighters from colliding with eachother in awkward ways, also prevents them from standing on eachother
     [Header("Pushbox Settings")]
     public float pushboxWidth = 1f;
     public float pushboxHeightTolerance = 1.5f;

@@ -6,14 +6,12 @@ public class Hitbox : MonoBehaviour
 {
     private AttackData attackData;
     private Fighter owner;
-    private readonly HashSet<Fighter> hitTargets = new HashSet<Fighter>();
 
     //Called by AttackController when this attack's active frames begin.
     public void Activate(AttackData data, Fighter ownerFighter)
     {
         attackData = data;
         owner = ownerFighter;
-        hitTargets.Clear();
         gameObject.SetActive(true);
     }
 
@@ -27,13 +25,9 @@ public class Hitbox : MonoBehaviour
     {
         Fighter targetFighter = other.GetComponent<Fighter>();
 
-        //Ignore non-fighters, yourself, and anything already hit this activation
-        //(prevents hitting multiple times, may want to revisit for multi-hit attacks later).
+        //Attacks don't hit your own hitbox
         if (targetFighter == null) return;
         if (targetFighter == owner) return;
-        if (hitTargets.Contains(targetFighter)) return;
-
-        hitTargets.Add(targetFighter);
 
         Vector2 knockbackDir = new Vector2(owner.facingDir, 0f).normalized;
         Vector2 knockback = knockbackDir * attackData.hitKnockback;
