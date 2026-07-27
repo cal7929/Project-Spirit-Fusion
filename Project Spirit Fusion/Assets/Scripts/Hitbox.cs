@@ -41,6 +41,6 @@ public class Hitbox : MonoBehaviour
         Vector2 knockbackDir = new Vector2(owner.facingDir, 0f).normalized;
         Vector2 knockback = knockbackDir * attackData.hitKnockback;
 
-        targetFighter.TakeDamage(attackData.damage, attackData.hitstunFrames, knockback);
+        targetFighter.TakeDamage(attackData.damage, attackData.hitstunFrames, knockback, attackData.type);
     }
 }

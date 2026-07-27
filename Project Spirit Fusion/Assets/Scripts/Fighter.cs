@@ -83,11 +83,11 @@ public class Fighter : MonoBehaviour
     }
 
     //Chip damage from specials will be in here later.
-    public void TakeDamage(int damage, int hitstun, Vector2 knockback)
+    public void TakeDamage(int damage, int hitstun, Vector2 knockback, AttackData.AttackType attackType)
     {
         if (currentState == FighterState.Dead) return;
 
-        if (IsBlocking())
+        if (IsBlocking(attackType))
         {
             //Blocked hits do no damage, half hitstun as blockstun, softer pushback.
             SetState(FighterState.Blockstun);
@@ -118,18 +118,43 @@ public class Fighter : MonoBehaviour
         rb.linearVelocity = knockback;
     }
 
-    //Checks if you are blocking based on opponent's direction
-    public bool IsBlocking()
+    //Checks if you are blocking: holding away from the opponent, while in a
+    //neutral standing/crouching state (not mid-attack, not already stunned,
+    //not airborne), and the attack's type is blockable from your current
+    //stance (Low only blocks crouching, Overhead only blocks standing).
+    public bool IsBlocking(AttackData.AttackType attackType)
     {
         if (opponentDir == null) return false;
 
-        bool opponentIsRight = opponentDir.position.x > transform.position.x;
+        //Can't block in the air, and can't block while already doing
+        //something else (attacking, in hitstun/blockstun/knockdown, dead).
+        if (currentStance == AttackStance.Jumping) return false;
+        if (!IsNeutralState()) return false;
 
-        //Always block when moving away from your opponent
-        if (opponentIsRight && Keyboard.current.aKey.isPressed) return true;
-        if (!opponentIsRight && Keyboard.current.dKey.isPressed) return true;
+        bool holdingAway = facingDir == 1
+            ? Keyboard.current.aKey.isPressed
+            : Keyboard.current.dKey.isPressed;
 
-        return false;
+        if (!holdingAway) return false;
+
+        switch (attackType)
+        {
+            case AttackData.AttackType.Low:
+                return currentStance == AttackStance.Crouching;
+            case AttackData.AttackType.Overhead:
+                return currentStance == AttackStance.Standing;
+            default: //High
+                return true;
+        }
+    }
+
+    //Neutral = free to act and not mid-attack. Used by IsBlocking so whiffed
+    //attacks (currentState == Attacking) can't also count as blocking.
+    bool IsNeutralState()
+    {
+        return currentState == FighterState.Idle
+            || currentState == FighterState.Moving
+            || currentState == FighterState.Crouching;
     }
 
     //Only method that can change state to prevent accidental changes.

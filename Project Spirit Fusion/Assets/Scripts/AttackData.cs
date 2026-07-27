@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewAttack", menuName = "Attack Data")]
+[CreateAssetMenu(fileName = "NewAttack", menuName = "Project_Spirit_Fusion/Attack Data")]
 public class AttackData : ScriptableObject
 {
     public enum AttackType
