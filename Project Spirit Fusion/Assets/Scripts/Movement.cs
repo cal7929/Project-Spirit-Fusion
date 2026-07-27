@@ -25,6 +25,9 @@ public class Movement : MonoBehaviour
     private bool jumpHeld;
     private bool isCrouching = false;
 
+    //Cached once per physics step so Update() and FixedUpdate() don't each fire their own raycast.
+    private bool grounded;
+
     private Vector3 standingScale;
 
     private Rigidbody2D rb;
@@ -44,8 +47,6 @@ public class Movement : MonoBehaviour
 
     void Update()
     {
-        bool grounded = IsGrounded();
-
         if (!fighter.CanAct()) return;
 
         if (fighter.currentState == FighterState.Attacking)
@@ -54,37 +55,8 @@ public class Movement : MonoBehaviour
             return;
         }
 
-        if (grounded)
-        {
-            if (Keyboard.current.sKey.isPressed)
-            {
-                moveInput = 0f;
-                fighter.SetState(FighterState.Crouching);
-            }
-            else
-            {
-                if (fighter.currentState == FighterState.Crouching)
-                    fighter.SetState(FighterState.Idle);
-
-                moveInput = 0f;
-                if (Keyboard.current.aKey.isPressed)
-                {
-                    moveInput = -1f;
-                }
-                else if (Keyboard.current.dKey.isPressed)
-                {
-                    moveInput = 1f;
-                }
-            }
-        }
-
-        //No jumping while crouching
-        if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching)
-        {
-            jumpPressed = true;
-            fighter.SetState(FighterState.Jumping);
-        }
-        jumpHeld = Keyboard.current.wKey.isPressed;
+        HandleGroundedInput();
+        HandleJumpInput();
 
         //Update the crouch geometry whenever the state changes.
         UpdateCrouchScale();
@@ -94,10 +66,55 @@ public class Movement : MonoBehaviour
     {
         if (!fighter.CanAct()) return;
 
-        bool grounded = IsGrounded();
+        //Single source of truth for this physics step.
+        grounded = IsGrounded();
 
+        HandleMovementPhysics(grounded);
+
+        HandleJumpingPhysics(grounded);
+    }
+
+    void HandleGroundedInput()
+    {
+        if (!grounded) return;
+
+        if (Keyboard.current.sKey.isPressed)
+        {
+            moveInput = 0f;
+            fighter.SetState(FighterState.Crouching);
+        }
+        else
+        {
+            if (fighter.currentState == FighterState.Crouching)
+                fighter.SetState(FighterState.Idle);
+
+            moveInput = 0f;
+            if (Keyboard.current.aKey.isPressed)
+            {
+                moveInput = -1f;
+            }
+            else if (Keyboard.current.dKey.isPressed)
+            {
+                moveInput = 1f;
+            }
+        }
+    }
+
+    void HandleJumpInput()
+    {
+        //No jumping while crouching
+        if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching)
+        {
+            jumpPressed = true;
+            fighter.SetState(FighterState.Jumping);
+        }
+        jumpHeld = Keyboard.current.wKey.isPressed;
+    }
+
+    void HandleMovementPhysics(bool isGrounded)
+    {
         //Horizontal movement
-        if (grounded)
+        if (isGrounded)
         {
             rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
 
@@ -105,24 +122,27 @@ public class Movement : MonoBehaviour
             if (fighter.currentState != FighterState.Attacking
                 && fighter.currentState != FighterState.Crouching)
             {
-                if (moveInput == 1 ||  moveInput == -1)
+                if (moveInput != 0f)
                 {
                     fighter.SetState(FighterState.Moving);
                 }
-                else if (moveInput == 0)
+                else
                 {
                     fighter.SetState(FighterState.Idle);
                 }
             }
         }
+    }
 
+    void HandleJumpingPhysics(bool isGrounded)
+    {
         //Jumping
-        if (jumpPressed && grounded)
+        if (jumpPressed && isGrounded)
         {
             //launch the player
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
 
-            //reset jumping so it doesn"double jump"
+            //reset jumping so it doesn't double jump
             jumpPressed = false;
 
             fighter.SetState(FighterState.Idle);
@@ -134,11 +154,11 @@ public class Movement : MonoBehaviour
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
         }
 
-        //Fall faster for better fighting gasme movement
+        //Fall faster for better fighting game movement
         if (rb.linearVelocity.y < 0f)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
-            if (grounded)
+            if (isGrounded)
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
             }
@@ -149,42 +169,31 @@ public class Movement : MonoBehaviour
     //This method can be removed once animations are added, this is just for the crude build we have now.
     void UpdateCrouchScale()
     {
-        //Determines whether the player should crouch based on current state
         bool shouldCrouch = fighter.currentState == FighterState.Crouching;
 
-        //If you should be crouching but aren't, start crouching
-        if (shouldCrouch && !isCrouching)
-        {
-            isCrouching = true;
+        //Nothing changed, nothing to do.
+        if (shouldCrouch == isCrouching) return;
 
-            //Preserve the current X sign so facing direction isn't lost.
-            float xSign = Mathf.Sign(transform.localScale.x);
-            float crouchY = standingScale.y * crouchScaleY;
-            transform.localScale = new Vector3(standingScale.x * xSign, crouchY, standingScale.z);
+        //Preserve the current X sign so facing direction isn't lost.
+        float xSign = Mathf.Sign(transform.localScale.x);
+        float crouchY = standingScale.y * crouchScaleY;
+        //Shift by this much so feet stay planted since unity scales from center.
+        float heightDiff = (standingScale.y - crouchY) * 0.5f;
 
-            //Shift down so feet stay planted since unity scales from center.
-            float heightDiff = (standingScale.y - crouchY) * 0.5f;
-            transform.position -= new Vector3(0f, heightDiff, 0f);
-        }
-        //if you shouldn't crouch but are, stop crouching
-        else if (!shouldCrouch && isCrouching)
-        {
-            isCrouching = false;
+        float targetY = shouldCrouch ? crouchY : standingScale.y;
+        float positionDelta = shouldCrouch ? -heightDiff : heightDiff;
 
-            float xSign = Mathf.Sign(transform.localScale.x);
-            transform.localScale = new Vector3(standingScale.x * xSign, standingScale.y, standingScale.z);
+        transform.localScale = new Vector3(standingScale.x * xSign, targetY, standingScale.z);
+        transform.position += new Vector3(0f, positionDelta, 0f);
 
-            float crouchY = standingScale.y * crouchScaleY;
-            float heightDiff = (standingScale.y - crouchY) * 0.5f;
-            transform.position += new Vector3(0f, heightDiff, 0f);
-        }
+        isCrouching = shouldCrouch;
     }
 
     bool IsGrounded()
     {
         if (col == null) return false;
 
-        //Check if airborne due to non-jumping reasons, creates a ray that shoots downaward to detect the ground layer
+        //Check if airborne due to non-jumping reasons, creates a ray that shoots downward to detect the ground layer
         Vector2 origin = new Vector2(col.bounds.center.x, col.bounds.min.y);
         RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, groundCheckDistance, groundLayer);
         return hit.collider != null;

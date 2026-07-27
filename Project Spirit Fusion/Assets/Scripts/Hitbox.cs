@@ -21,6 +21,7 @@ public class Hitbox : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    //Actually deals the damage based on attack data
     void OnTriggerEnter2D(Collider2D other)
     {
         Fighter targetFighter = other.GetComponent<Fighter>();

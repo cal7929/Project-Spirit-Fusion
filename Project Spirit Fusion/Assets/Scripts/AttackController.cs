@@ -88,7 +88,7 @@ public class AttackController : MonoBehaviour
         AdvanceAttack();
     }
 
-    //-----------------Needs a rework--------------------
+    //-----------------Needs a rework to handle combos better and eventually special moves--------------------
     void HandleInput()
     {
         bool lightPressed = Keyboard.current.jKey.wasPressedThisFrame;
