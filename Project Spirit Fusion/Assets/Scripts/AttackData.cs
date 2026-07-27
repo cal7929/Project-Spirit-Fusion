@@ -1,7 +1,8 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public class AttackData
+[CreateAssetMenu(fileName = "NewAttack", menuName = "Attack Data")]
+public class AttackData : ScriptableObject
 {
     public enum AttackType
     {
@@ -10,7 +11,31 @@ public class AttackData
         Overhead
     }
 
+    public enum AttackStance
+    {
+        Standing,
+        Crouching,
+        Jumping
+    }
+
+    public enum AttackStrength
+    {
+        Light,
+        Medium,
+        Heavy
+    }
+
+    [Header("Identity")]
     public string attackName;
+
+    public AttackStance requiredStance = AttackStance.Standing;
+
+    public AttackStrength strength;
+
+    [Tooltip("Leave empty for a normal (button press only). Fill in with numpad notation for a special, e.g. \"236\" = quarter-circle-forward.")]
+    public string motionInput = "";
+
+    public bool IsSpecialMove => !string.IsNullOrEmpty(motionInput);
 
     public GameObject hitboxObject;
 
@@ -33,12 +58,12 @@ public class AttackData
     [Tooltip("Frames of recovery after active. The fighter is vulnerable here.")]
     public int recoveryFrames;
 
-    [Tooltip("How many frames INTO recovery this attack can still be cancelled into the next in the chain (L>M>H only). 0 = active frames only.")]
+    [Tooltip("How many frames INTO recovery this attack can still be cancelled into something in cancelOptions. 0 = active frames only.")]
     public int cancelWindowFrames;
 
-    //Potentially adding a list of attacks that each attack can cancel into without worrying about frames,
-    //this is likely not industry standard but could make our lives a lot easier if it works,
-    //allows us to hand pick and customize what moves combo with what, issues would be keeping track of changes and 'magic number'ish scenarios
+    [Header("Cancels")]
+    [Tooltip("Attacks (normals or specials) this move can cancel into during its active/cancel window. Replaces the old hardcoded L>M>H chain - add/remove entries here instead of editing code.")]
+    public List<AttackData> cancelOptions = new List<AttackData>();
 
     //Derived frame thresholds used by AttackController to drive phase transitions.
     public int ActiveStartFrame => startupFrames;

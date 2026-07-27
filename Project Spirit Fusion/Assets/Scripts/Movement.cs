@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static AttackData;
 
 public class Movement : MonoBehaviour
 {
@@ -69,9 +70,36 @@ public class Movement : MonoBehaviour
         //Single source of truth for this physics step.
         grounded = IsGrounded();
 
+        //Runs every physics step regardless of FighterState (unlike Update's
+        //early-return on Attacking), so AttackStance stays correct even while
+        //an attack is in progress - e.g. a crouching attack is still
+        //recognized as "crouching" for the whole attack, not just up until
+        //FighterState flips to Attacking.
+        UpdateAttackStance(grounded);
+
         HandleMovementPhysics(grounded);
 
         HandleJumpingPhysics(grounded);
+    }
+
+    //Standing/Crouching/Jumping, derived straight from physics state (grounded)
+    //and the crouch key, rather than from FighterState. This is deliberately
+    //separate from FighterState so it survives FighterState changing to
+    //Attacking/Hitstun/etc.
+    void UpdateAttackStance(bool isGrounded)
+    {
+        if (!isGrounded)
+        {
+            fighter.SetStance(AttackStance.Jumping);
+        }
+        else if (Keyboard.current.sKey.isPressed)
+        {
+            fighter.SetStance(AttackStance.Crouching);
+        }
+        else
+        {
+            fighter.SetStance(AttackStance.Standing);
+        }
     }
 
     void HandleGroundedInput()

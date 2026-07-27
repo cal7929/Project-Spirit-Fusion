@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static AttackData;
 
 public enum FighterState
 {
@@ -24,6 +25,12 @@ public class Fighter : MonoBehaviour
 
     [Header("Fighter State")]
     public FighterState currentState = FighterState.Idle;
+
+    //Tracked separately from currentState on purpose - Movement keeps this up
+    //to date every physics step regardless of what currentState is doing, so
+    //"was I crouching/jumping" survives even while currentState is Attacking.
+    [Header("Attack Stance")]
+    public AttackStance currentStance = AttackStance.Standing;
 
     [Header("Facing Direction")]
     public int facingDir = 1;
@@ -129,6 +136,13 @@ public class Fighter : MonoBehaviour
     public void SetState(FighterState newState)
     {
         currentState = newState;
+    }
+
+    //Same pattern as SetState, but for stance. Called by Movement every
+    //physics step (see Movement.UpdateAttackStance), not by AttackController.
+    public void SetStance(AttackStance newStance)
+    {
+        currentStance = newStance;
     }
 
     //Useful checking method for other scripts
