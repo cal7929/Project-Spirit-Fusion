@@ -3,34 +3,25 @@ using System.Linq;
 using UnityEngine;
 using static AttackData;
 
-//Common script controlling light/medium/heavy attacks (and now specials) for
-//any fighter. Pure state machine now - it does NOT read Keyboard directly and
-//does NOT know how an attack was triggered (button vs motion). It just reacts
-//to "this AttackData won this frame," which InputBuffer + CommandParser feed it.
-//
-//Requires InputBuffer and CommandParser components on the same GameObject.
+//The state machine that takes info given to it by CommandParser
+//and executes the actual attacks and specials based on the given data.
 [RequireComponent(typeof(InputReader))]
 [RequireComponent(typeof(CommandParser))]
 public class AttackController : MonoBehaviour
 {
-    //One entry per (stance, strength) combo you want available, e.g.
-    //Standing+Light, Crouching+Medium, Jumping+Heavy. This replaces the old
-    //9 separate named AttackData/Hitbox field pairs - add a stance's worth of
-    //moves by adding list entries, not new fields.
+    //Struct containing the fighter's normal moves, set in the inspector
     [System.Serializable]
     public struct NormalMoveSlot
     {
-        //AttackStance, not FighterState - see AttackStance's comments for why
-        //these are tracked as two separate things now.
         public AttackStance stance;
         public AttackStrength strength;
         public AttackData data;
     }
 
     [Header("Normal Attacks")]
-    [Tooltip("One entry per stance+strength combo, e.g. Standing/Light, Crouching/Medium, Jumping/Heavy.")]
     public List<NormalMoveSlot> normalMoves = new List<NormalMoveSlot>();
 
+    //Dictionary to look for valid moves within the list
     private Dictionary<(AttackStance, AttackStrength), AttackData> normalLookup;
     private Dictionary<AttackData, Hitbox> hitboxCache = new Dictionary<AttackData, Hitbox>();
 
@@ -57,14 +48,14 @@ public class AttackController : MonoBehaviour
         }
     }
 
-    //Input is read in Update so wasPressedThisFrame (via InputBuffer) stays consistent.
+    //Input is read in Update to stay consistent with wasPressedThisFrame from InputReader
     void Update()
     {
         HandleInput();
     }
 
-    //Frame counter and phase transitions run in FixedUpdate so they advance
-    //exactly once per physics tick, meaning one frame at 60fps.
+    //Frame counter and phase transitions run in FixedUpdate so
+    //they advance exactly once per frame
     void FixedUpdate()
     {
         AdvanceAttack();
@@ -83,8 +74,7 @@ public class AttackController : MonoBehaviour
         if (special == null && pressedStrength == null) return;
 
         //During the cancel window, only whatever is listed in the current
-        //attack's cancelOptions is allowed - specials or normals, decided by
-        //data instead of hardcoded strength comparisons.
+        //attack's cancelOptions is allowed
         if (currentAttack != null && InCancelWindow())
         {
             if (special != null && currentAttack.cancelOptions.Contains(special))
@@ -130,7 +120,7 @@ public class AttackController : MonoBehaviour
     {
         if (data == null) return;
 
-        //Deactivate the previous hitbox immediately on cancel.
+        //Deactivate the previous hitbox immediately on a cancel.
         currentHitbox?.Deactivate();
 
         currentAttack = data;
@@ -178,7 +168,7 @@ public class AttackController : MonoBehaviour
         attackFrame++;
     }
 
-    //True while we're in the active frames or within the cancel window of recovery.
+    //True during the active frames or within the cancel window of recovery.
     bool InCancelWindow()
     {
         if (currentAttack == null) return false;

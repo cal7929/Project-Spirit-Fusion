@@ -59,7 +59,7 @@ public class Movement : MonoBehaviour
         HandleGroundedInput();
         HandleJumpInput();
 
-        //Update the crouch geometry whenever the state changes.
+        //Update the crouch hitbox whenever the state changes.
         UpdateCrouchScale();
     }
 
@@ -67,14 +67,10 @@ public class Movement : MonoBehaviour
     {
         if (!fighter.CanAct()) return;
 
-        //Single source of truth for this physics step.
         grounded = IsGrounded();
 
-        //Runs every physics step regardless of FighterState (unlike Update's
-        //early-return on Attacking), so AttackStance stays correct even while
-        //an attack is in progress - e.g. a crouching attack is still
-        //recognized as "crouching" for the whole attack, not just up until
-        //FighterState flips to Attacking.
+        //Runs every physics step regardless of FighterState so
+        //AttackStance stays correct even while an attack is in progress 
         UpdateAttackStance(grounded);
 
         HandleMovementPhysics(grounded);
@@ -82,10 +78,8 @@ public class Movement : MonoBehaviour
         HandleJumpingPhysics(grounded);
     }
 
-    //Standing/Crouching/Jumping, derived straight from physics state (grounded)
-    //and the crouch key, rather than from FighterState. This is deliberately
-    //separate from FighterState so it survives FighterState changing to
-    //Attacking/Hitstun/etc.
+    //State and stance are very different, Stance determines attack type
+    //and state is what the fighter is actually doing.
     void UpdateAttackStance(bool isGrounded)
     {
         if (!isGrounded)
@@ -131,7 +125,7 @@ public class Movement : MonoBehaviour
     void HandleJumpInput()
     {
         //No jumping while crouching
-        if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching)
+        if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching )
         {
             jumpPressed = true;
             fighter.SetState(FighterState.Jumping);
@@ -167,10 +161,10 @@ public class Movement : MonoBehaviour
         //Jumping
         if (jumpPressed && isGrounded)
         {
-            //launch the player
+            //Launch the player
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
 
-            //reset jumping so it doesn't double jump
+            //Reset jumping so it doesn't double jump
             jumpPressed = false;
 
             fighter.SetState(FighterState.Idle);
@@ -194,7 +188,7 @@ public class Movement : MonoBehaviour
     }
 
     //Scales the fighter cube down when crouching and back to normal when crouch is released.
-    //This method can be removed once animations are added, this is just for the crude build we have now.
+    //This method is used for the player's hitbox, the sprite animation will be in a different state machine
     void UpdateCrouchScale()
     {
         bool shouldCrouch = fighter.currentState == FighterState.Crouching;

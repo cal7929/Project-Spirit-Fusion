@@ -1,21 +1,15 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-//Watches InputBuffer for known special-move motions (quarter circles, dragon
-//punch shapes, charge motions, etc.) and returns the matching AttackData when
+//Watches InputBuffer for known special-move motion notation and returns the matching AttackData when
 //one is completed. AttackController calls TryParseSpecial() once per frame
-//alongside its normal-attack handling; specials take priority when both would
-//otherwise trigger on the same frame.
-//
-//This is a simplified/teaching-level matcher (strict in-order subsequence
-//matching). See the notes at the bottom of this file for how real fighting
-//games extend this further.
+//alongside its normal-attack handling so that specials take priority when both trigger on the same frame.
 public class CommandParser : MonoBehaviour
 {
-    [Tooltip("All special moves this character can perform. Only entries with a non-empty motionInput are considered.")]
+    [Tooltip("All special moves this character can perform.")]
     public List<AttackData> specialMoves = new List<AttackData>();
 
-    [Tooltip("How many frames back to search for a motion. Wider = more lenient timing, but also more prone to false positives.")]
+    [Tooltip("How many frames back to search for a motion. Larger number = more leniant timing, but more likely to perform unintentional moves.")]
     public int searchWindow = 20;
 
     private InputReader inputBuffer;
@@ -26,7 +20,7 @@ public class CommandParser : MonoBehaviour
     }
 
     //Call once per frame. Returns the AttackData for the first special whose
-    //motion was completed with a button press on THIS frame, or null.
+    //motion was completed with a button press on this frame.
     public AttackData TryParseSpecial()
     {
         InputReader.InputFrame[] recent = inputBuffer.GetRecentFrames(searchWindow);
@@ -46,9 +40,8 @@ public class CommandParser : MonoBehaviour
         return null;
     }
 
-    //Checks whether the digits in `motion` (e.g. "236") appear, in order, as a
-    //subsequence of the directions held across `frames`. A run of frames
-    //holding the same direction only counts once, so holding down-forward for
+    //Checks the frames for any matching motion inputs. A long run of frames
+    //holding the same direction only counts once, so holding down for
     //several frames doesn't require several separate matching frames.
     bool MotionMatches(string motion, InputReader.InputFrame[] frames)
     {

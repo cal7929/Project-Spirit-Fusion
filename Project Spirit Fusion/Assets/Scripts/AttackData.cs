@@ -32,7 +32,7 @@ public class AttackData : ScriptableObject
 
     public AttackStrength strength;
 
-    [Tooltip("Leave empty for a normal (button press only). Fill in with numpad notation for a special, e.g. \"236\" = quarter-circle-forward.")]
+    [Tooltip("Leave empty for normals (button press only). Fill in with numpad notation for a special, ex: 236 for a quarter circle forward")]
     public string motionInput = "";
 
     public bool IsSpecialMove => !string.IsNullOrEmpty(motionInput);
@@ -55,14 +55,14 @@ public class AttackData : ScriptableObject
     [Tooltip("Frames the hitbox is active and can deal damage.")]
     public int activeFrames;
 
-    [Tooltip("Frames of recovery after active. The fighter is vulnerable here.")]
+    [Tooltip("Frames of recovery after active.")]
     public int recoveryFrames;
 
-    [Tooltip("How many frames INTO recovery this attack can still be cancelled into something in cancelOptions. 0 = active frames only.")]
+    [Tooltip("How many frames during recovery this attack can still be cancelled into something in its cancelOptions. 0 = active frames only.")]
     public int cancelWindowFrames;
 
     [Header("Cancels")]
-    [Tooltip("Attacks (normals or specials) this move can cancel into during its active/cancel window. Replaces the old hardcoded L>M>H chain - add/remove entries here instead of editing code.")]
+    [Tooltip("Any move that this move can cancel into during its cancel window.")]
     public List<AttackData> cancelOptions = new List<AttackData>();
 
     //Derived frame thresholds used by AttackController to drive phase transitions.

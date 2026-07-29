@@ -2,20 +2,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
-//Records raw input every frame into a fixed-size ring buffer so that motion
-//inputs (quarter circles, dragon punch shapes, etc.) and buffered button
-//presses can be read back a few frames later by CommandParser.
-//
-//IMPORTANT SETUP NOTE: this needs to record BEFORE AttackController reads it
-//each frame. Unity doesn't guarantee Update() order between components by
-//default - set this via Edit > Project Settings > Script Execution Order,
-//placing InputBuffer before AttackController. Otherwise AttackController may
-//read last frame's data.
+//Records player input every frame so that special moves and command normals can be performed,
+//aslo allows for input buffering in combos. This input is sent to the command parser to actually read
+//In the project settings this script has been set to read BEFORE Attack Controller. This is needed
+//Because Unity doesn't guarantee the order in which Update()'s resolve.
 public class InputReader : MonoBehaviour
 {
-    //One frame's worth of recorded input. Direction uses numpad notation
-    //(1-9, 5 = neutral) already adjusted for which way the fighter is facing,
-    //so "6" always means "forward" regardless of player side.
+    //Struct for keeping track of what buttons were pressed each individual frame
     public struct InputFrame
     {
         public int frameNumber;
@@ -23,9 +16,13 @@ public class InputReader : MonoBehaviour
         public bool lightPressed;
         public bool mediumPressed;
         public bool heavyPressed;
+
+        //Future inputs
+        //tagPressed
+        //specialtagPressed
     }
 
-    [Tooltip("How many frames of history to keep. At 60fps, 30 = half a second, which is plenty for most motion inputs.")]
+    [Tooltip("How many frames of history to keep. At 60fps, 30 = half a second.")]
     public int bufferSize = 30;
 
     private Queue<InputFrame> buffer = new Queue<InputFrame>();
@@ -34,12 +31,13 @@ public class InputReader : MonoBehaviour
 
     private Fighter fighter;
 
-    //Numpad-notation grid. Row = vertical (down/mid/up), Col = back/neutral/forward.
+    //Numpad-notation grid property. Standard for fighting games:
+    //5 is neutral, 4 is back, 6 is forward, 8 is up, and 2 is down (array is flipped). The others are diagonals
     private static readonly int[,] NumpadGrid =
     {
-        { 1, 2, 3 }, // down-back, down, down-forward
-        { 4, 5, 6 }, // back, neutral, forward
-        { 7, 8, 9 }  // up-back, up, up-forward
+        { 1, 2, 3 }, //down-back, down, down-forward
+        { 4, 5, 6 }, //back, neutral, forward
+        { 7, 8, 9 }  //up-back, up, up-forward
     };
 
     void Awake()
@@ -70,7 +68,9 @@ public class InputReader : MonoBehaviour
 
         buffer.Enqueue(lastFrame);
         while (buffer.Count > bufferSize)
+        {
             buffer.Dequeue();
+        }
     }
 
     Vector2Int ReadRawDirection()
@@ -83,24 +83,22 @@ public class InputReader : MonoBehaviour
         return new Vector2Int(x, y);
     }
 
-    //Converts raw x/y (-1, 0, 1) into numpad notation, mirroring x when facing
-    //left so that "forward" is always the same digit regardless of side.
+    //Converts x/y (-1, 0, 1) input into the numpad notation, mirroring x when facing
+    //left so that forward is always the same digit regardless of side.
     int ToNumpadNotation(Vector2Int raw, float facingDir)
     {
         int x = raw.x;
         if (facingDir < 0) x = -x;
 
-        int col = x + 1;      // -1,0,1 -> 0,1,2
-        int row = raw.y + 1;  // -1,0,1 -> 0,1,2
+        int col = x + 1;      //-1,0,1 = 0,1,2
+        int row = raw.y + 1;  //-1,0,1 = 0,1,2
         return NumpadGrid[row, col];
     }
 
-    //Most recent recorded frame. Use this for simple "was a button just
-    //pressed" checks (normals) instead of reading Keyboard.current directly -
-    //keeps all input reading in one place.
+    //Most recent recorded frame. 
     public InputFrame Latest => lastFrame;
 
-    //Returns up to `count` of the most recent frames, oldest first. Used by
+    //Returns up to the count of the most recent frames, oldest first. Used by
     //CommandParser to scan for motion patterns.
     public InputFrame[] GetRecentFrames(int count)
     {
