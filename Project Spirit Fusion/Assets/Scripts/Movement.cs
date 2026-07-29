@@ -124,8 +124,9 @@ public class Movement : MonoBehaviour
 
     void HandleJumpInput()
     {
-        //No jumping while crouching
-        if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching )
+        //No jumping while crouching, and no queuing a second jump while
+        //already airborne.
+        if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching && grounded)
         {
             jumpPressed = true;
             fighter.SetState(FighterState.Jumping);

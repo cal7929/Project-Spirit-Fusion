@@ -1118,7 +1118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cf1c100dba12fb4898c6c3f67d3812c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fighterA: {fileID: 0}
+  fighterA: {fileID: 101919366}
   fighterB: {fileID: 713840012}
   roundTime: 99
   roundsToWin: 2

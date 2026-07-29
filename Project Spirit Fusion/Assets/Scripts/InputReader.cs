@@ -35,9 +35,9 @@ public class InputReader : MonoBehaviour
     //5 is neutral, 4 is back, 6 is forward, 8 is up, and 2 is down (array is flipped). The others are diagonals
     private static readonly int[,] NumpadGrid =
     {
-        { 1, 2, 3 }, //down-back, down, down-forward
-        { 4, 5, 6 }, //back, neutral, forward
-        { 7, 8, 9 }  //up-back, up, up-forward
+        { 1, 2, 3 }, 
+        { 4, 5, 6 }, 
+        { 7, 8, 9 }  
     };
 
     void Awake()
