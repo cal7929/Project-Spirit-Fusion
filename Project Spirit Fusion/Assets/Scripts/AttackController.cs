@@ -17,15 +17,30 @@ public class AttackController : MonoBehaviour
         public AttackData data;
     }
 
+    //Maps a hitboxId (matching AttackData.hitboxId) to THIS fighter instance's
+    //own local Hitbox child. Wired up per-prefab in the Inspector, so each
+    //fighter resolves to its own hitbox even when multiple fighters share the
+    //same AttackData assets.
+    [System.Serializable]
+    public struct HitboxSlot
+    {
+        public string id;
+        public Hitbox hitbox;
+    }
+
     [Header("Normal Attacks")]
     public List<NormalMoveSlot> normalMoves = new List<NormalMoveSlot>();
 
+    [Header("Hitboxes")]
+    [Tooltip("This fighter's own hitbox children, tagged with an id that matches AttackData.hitboxId.")]
+    public List<HitboxSlot> hitboxSlots = new List<HitboxSlot>();
+
     //Dictionary to look for valid moves within the list
     private Dictionary<(AttackStance, AttackStrength), AttackData> normalLookup;
-    private Dictionary<AttackData, Hitbox> hitboxCache = new Dictionary<AttackData, Hitbox>();
+    private Dictionary<string, Hitbox> hitboxLookup;
 
     private Fighter fighter;
-    private InputReader inpuinputReader;
+    private InputReader inputReader;
     private CommandParser commandParser;
 
     private AttackData currentAttack;
@@ -37,13 +52,19 @@ public class AttackController : MonoBehaviour
     void Awake()
     {
         fighter = GetComponent<Fighter>();
-        inpuinputReader = GetComponent<InputReader>();
+        inputReader = GetComponent<InputReader>();
         commandParser = GetComponent<CommandParser>();
 
         normalLookup = new Dictionary<(AttackStance, AttackStrength), AttackData>();
         foreach (NormalMoveSlot slot in normalMoves)
         {
             normalLookup[(slot.stance, slot.strength)] = slot.data;
+        }
+
+        hitboxLookup = new Dictionary<string, Hitbox>();
+        foreach (HitboxSlot slot in hitboxSlots)
+        {
+            hitboxLookup[slot.id] = slot.hitbox;
         }
     }
 
@@ -63,7 +84,7 @@ public class AttackController : MonoBehaviour
     void HandleInput()
     {
         AttackData special = commandParser.TryParseSpecial();
-        InputReader.InputFrame last = inpuinputReader.Latest;
+        InputReader.InputFrame last = inputReader.Latest;
 
         AttackStrength? pressedStrength = null;
         if (last.lightPressed) pressedStrength = AttackStrength.Light;
@@ -129,19 +150,14 @@ public class AttackController : MonoBehaviour
         fighter.SetState(FighterState.Attacking);
     }
 
-    //Resolves and caches the Hitbox component from AttackData.hitboxObject,
-    //so each move only needs to be wired up once on its own asset instead of
-    //needing a matching field on AttackController.
+    //Resolves the Hitbox for this move from THIS fighter's own hitboxLookup,
+    //keyed by AttackData.hitboxId. Every fighter instance resolves to its own
+    //hitbox child even when sharing the same AttackData asset.
     Hitbox ResolveHitbox(AttackData data)
     {
-        if (data.hitboxObject == null) return null;
+        if (string.IsNullOrEmpty(data.hitboxId)) return null;
 
-        if (!hitboxCache.TryGetValue(data, out Hitbox hitbox))
-        {
-            hitbox = data.hitboxObject.GetComponent<Hitbox>();
-            hitboxCache[data] = hitbox;
-        }
-
+        hitboxLookup.TryGetValue(data.hitboxId, out Hitbox hitbox);
         return hitbox;
     }
 

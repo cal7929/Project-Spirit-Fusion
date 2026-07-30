@@ -23,7 +23,8 @@ public class AttackData : ScriptableObject
 
     public bool IsSpecialMove => !string.IsNullOrEmpty(motionInput);
 
-    public GameObject hitboxObject;
+    [Tooltip("Matches a HitboxSlot.id on this fighter's AttackController - resolved per-instance instead of pointing at a specific GameObject, since this asset is shared across every fighter of this archetype.")]
+    public string hitboxId;
 
     [Header("Stats")]
     public int damage;
