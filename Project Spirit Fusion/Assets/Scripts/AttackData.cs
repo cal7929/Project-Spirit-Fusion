@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewAttack", menuName = "Project_Spirit_Fusion/Attack Data")]
+[CreateAssetMenu(fileName = "New Attack", menuName = "Project_Spirit_Fusion/Attack Data")]
 public class AttackData : ScriptableObject
 {
     public enum AttackType
@@ -9,20 +9,6 @@ public class AttackData : ScriptableObject
         High,
         Low,
         Overhead
-    }
-
-    public enum AttackStance
-    {
-        Standing,
-        Crouching,
-        Jumping
-    }
-
-    public enum AttackStrength
-    {
-        Light,
-        Medium,
-        Heavy
     }
 
     [Header("Identity")]

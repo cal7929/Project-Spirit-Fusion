@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using static AttackData;
 
 public class Movement : MonoBehaviour
 {

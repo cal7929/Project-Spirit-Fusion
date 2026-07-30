@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static AttackData;
 
 //The state machine that takes info given to it by CommandParser
 //and executes the actual attacks and specials based on the given data.
