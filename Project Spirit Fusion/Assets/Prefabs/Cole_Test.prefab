@@ -661,7 +661,7 @@ MonoBehaviour:
     data: {fileID: 11400000, guid: eea0374869fc62849acbfbd821e2f866, type: 2}
   - stance: 2
     strength: 0
-    data: {fileID: 11400000, guid: 2df37b4896629ad4ba334260d2d45cd0, type: 2}
+    data: {fileID: 11400000, guid: 1e1c5b5e1b63b94418635d7ce88718fc, type: 2}
   - stance: 2
     strength: 1
     data: {fileID: 11400000, guid: 618f20041c15f704cbb9d62576512a6f, type: 2}
