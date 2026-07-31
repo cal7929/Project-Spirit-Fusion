@@ -1,9 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-//Watches InputBuffer for known special-move motion notation and returns the matching AttackData when
-//one is completed. AttackController calls TryParseSpecial() once per frame alongside its normal-attack
-//handling so that specials take priority when both trigger on the same frame.
+//Watches InputBuffer for known special move motion notation and returns the matching AttackData when one is completed. 
 public class CommandParser : MonoBehaviour
 {
     //All special moves this character can perform.

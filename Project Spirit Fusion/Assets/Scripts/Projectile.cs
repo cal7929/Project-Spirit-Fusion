@@ -10,13 +10,11 @@ public class Projectile : MonoBehaviour
     private float lifetime;
     private int direction;
 
-    //Fired when this projectile is destroyed (hit something, or timed out).
-    //AttackController subscribes to this so it knows when its "one
-    //projectile in flight" slot frees up again.
+    //AttackController subscribes to this so it knows when it can shoot another projectile
     public event Action OnDespawned;
 
-    //Called by AttackController right after Instantiate. Sends the
-    //projectile forward and then activates its own hitbox the way a fighter would, (like a mini fighter)
+    //Called by AttackController right after Instantiate. Sends the projectile forward and
+    //then activates its own hitbox the way a fighter would, (like a mini fighter)
     public void Launch(AttackData data, Fighter owner, int facingDir)
     {
         speed = data.projectileSpeed;
@@ -35,8 +33,7 @@ public class Projectile : MonoBehaviour
         transform.position += Vector3.right * direction * speed * Time.deltaTime;
     }
 
-    //Covers both despawn paths: timing out (Destroy scheduled in Launch) and
-    //being destroyed early by Hitbox's destroyOnHit when it connects.
+    //Triggers the event when the object is destroyed
     void OnDestroy()
     {
         OnDespawned?.Invoke();
