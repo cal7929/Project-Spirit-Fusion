@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 57894abe43b9b9e43a91d3bd69a29c7a, type: 3}
-  m_Name: Cole_Light_Test_Data
+  m_Name: JumpL
   m_EditorClassIdentifier: 
-  attackName: Light attack test
-  requiredStance: 0
+  attackName: Jumping Light
+  requiredStance: 2
   strength: 0
   motionInput: 
-  hitboxId: standL
+  hitboxId: crouchL
   damage: 5
   hitstunFrames: 2
   hitKnockback: 2
-  type: 0
+  type: 2
   startupFrames: 4
   activeFrames: 3
   recoveryFrames: 2
   cancelWindowFrames: 2
   cancelOptions:
-  - {fileID: 11400000, guid: 4eca3087676a4e942ad9bdf931e5073d, type: 2}
+  - {fileID: 0}

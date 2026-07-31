@@ -10,19 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 57894abe43b9b9e43a91d3bd69a29c7a, type: 3}
-  m_Name: Cole_Heavy_Data_Test
+  m_Name: JumpM
   m_EditorClassIdentifier: 
-  attackName: Standing Heavy
-  requiredStance: 0
-  strength: 2
+  attackName: Jumping Medium
+  requiredStance: 2
+  strength: 1
   motionInput: 
-  hitboxId: standH
-  damage: 18
-  hitstunFrames: 6
-  hitKnockback: 4
-  type: 0
-  startupFrames: 8
-  activeFrames: 6
-  recoveryFrames: 5
-  cancelWindowFrames: 5
-  cancelOptions: []
+  hitboxId: jumpM
+  damage: 10
+  hitstunFrames: 4
+  hitKnockback: 3
+  type: 2
+  startupFrames: 5
+  activeFrames: 3
+  recoveryFrames: 3
+  cancelWindowFrames: 2
+  cancelOptions:
+  - {fileID: 0}
