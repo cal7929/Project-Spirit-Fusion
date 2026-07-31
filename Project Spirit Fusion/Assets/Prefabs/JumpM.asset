@@ -25,5 +25,4 @@ MonoBehaviour:
   activeFrames: 3
   recoveryFrames: 3
   cancelWindowFrames: 2
-  cancelOptions:
-  - {fileID: 0}
+  cancelOptions: []

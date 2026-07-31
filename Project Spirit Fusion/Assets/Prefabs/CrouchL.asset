@@ -26,4 +26,6 @@ MonoBehaviour:
   recoveryFrames: 2
   cancelWindowFrames: 2
   cancelOptions:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 8052e824e51f2544c8ce91cb92732d48, type: 2}
+  - {fileID: 11400000, guid: a22af9b36cd79c34296a44b2f91b459a, type: 2}
+  - {fileID: 11400000, guid: eea0374869fc62849acbfbd821e2f866, type: 2}

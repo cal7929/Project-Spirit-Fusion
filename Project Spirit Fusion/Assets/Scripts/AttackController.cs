@@ -12,6 +12,7 @@ public class AttackController : MonoBehaviour
     [System.Serializable]
     public struct NormalMoveSlot
     {
+        public string name;
         public AttackStance stance;
         public AttackStrength strength;
         public AttackData data;

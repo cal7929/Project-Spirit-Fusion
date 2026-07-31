@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 57894abe43b9b9e43a91d3bd69a29c7a, type: 3}
-  m_Name: JumpL
+  m_Name: Fireball
   m_EditorClassIdentifier: 
-  attackName: Jumping Light
-  requiredStance: 2
+  attackName: Fireball
+  requiredStance: 0
   strength: 0
-  motionInput: 
-  hitboxId: jumpL
-  damage: 5
-  hitstunFrames: 2
-  hitKnockback: 2
-  type: 2
-  startupFrames: 4
-  activeFrames: 3
-  recoveryFrames: 2
-  cancelWindowFrames: 2
+  motionInput: 45
+  hitboxId: fireball
+  damage: 12
+  hitstunFrames: 5
+  hitKnockback: 3
+  type: 0
+  startupFrames: 8
+  activeFrames: 6
+  recoveryFrames: 5
+  cancelWindowFrames: 5
   cancelOptions: []

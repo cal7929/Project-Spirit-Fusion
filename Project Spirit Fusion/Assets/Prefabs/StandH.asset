@@ -25,4 +25,5 @@ MonoBehaviour:
   activeFrames: 6
   recoveryFrames: 5
   cancelWindowFrames: 5
-  cancelOptions: []
+  cancelOptions:
+  - {fileID: 11400000, guid: e8a72e58848f6a2489205792dd3327ec, type: 2}

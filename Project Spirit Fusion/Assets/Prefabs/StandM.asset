@@ -27,3 +27,4 @@ MonoBehaviour:
   cancelWindowFrames: 2
   cancelOptions:
   - {fileID: 11400000, guid: 217c36d7ca856f64991c0f113d19cd6d, type: 2}
+  - {fileID: 11400000, guid: e8a72e58848f6a2489205792dd3327ec, type: 2}
