@@ -40,6 +40,23 @@ public class CommandParser : MonoBehaviour
         return null;
     }
 
+    //Which numpad directions are "one step" from each other on the grid,
+    //used to allow a skipped diagonal frame (e.g. rolling straight from 2 to
+    //6 without a frame ever reading 3) to still count as having passed
+    //through it. Only adjacency, not arbitrary jumps - 2 straight to 8 still
+    //fails, since that's not a legitimate roll-through.
+    private static readonly Dictionary<int, int[]> Adjacent = new Dictionary<int, int[]>
+    {
+        { 1, new[] { 2, 4 } },
+        { 2, new[] { 1, 3 } },
+        { 3, new[] { 2, 6 } },
+        { 4, new[] { 1, 7 } },
+        { 6, new[] { 3, 9 } },
+        { 7, new[] { 4, 8 } },
+        { 8, new[] { 7, 9 } },
+        { 9, new[] { 6, 8 } },
+    };
+
     //Checks the frames for any matching motion inputs. A long run of frames
     //holding the same direction only counts once, so holding down for
     //several frames doesn't require several separate matching frames.
@@ -58,6 +75,21 @@ public class CommandParser : MonoBehaviour
             {
                 motionIndex++;
             }
+            //Diagonal leniency: if this frame skipped straight to the NEXT
+            //required digit, and that digit is adjacent to the one we
+            //skipped, count both steps at once - the player rolled through
+            //the diagonal too fast for it to land on its own frame.
+            else if (motionIndex + 1 < motion.Length)
+            {
+                int nextWantDigit = motion[motionIndex + 1] - '0';
+                bool skippedStepIsAdjacent = Adjacent.TryGetValue(wantDigit, out int[] neighbors)
+                    && System.Array.IndexOf(neighbors, frame.direction) != -1;
+
+                if (frame.direction == nextWantDigit && skippedStepIsAdjacent && frame.direction != lastDirection)
+                {
+                    motionIndex += 2;
+                }
+            }
 
             lastDirection = frame.direction;
         }
@@ -67,20 +99,15 @@ public class CommandParser : MonoBehaviour
 
     //---- Where to take this next (not implemented here on purpose) ----
     //
-    // 1. Diagonal leniency: real engines usually accept a direct 2->6 as
-    //    satisfying "236" even if 3 was skipped for a frame or two, since
-    //    players roll their thumb through the diagonal fast. You'd loosen
-    //    MotionMatches to allow "adjacent enough" directions to count.
-    //
-    // 2. Charge motions (e.g. "[4]6" = hold back 40+ frames, then forward):
+    // 1. Charge motions (e.g. "[4]6" = hold back 40+ frames, then forward):
     //    needs tracking HOW LONG a direction was held, not just that it
     //    appeared - a different check than simple subsequence matching.
     //
-    // 3. Priority between multiple matching specials: if two moves' motions
+    // 2. Priority between multiple matching specials: if two moves' motions
     //    both matched this frame, decide a tie-break (e.g. prefer the one
     //    needing the longer/more specific motion).
     //
-    // 4. Buffering during hitstop/animation lock: if the parser only checks
+    // 3. Buffering during hitstop/animation lock: if the parser only checks
     //    "button pressed AND motion matched on the same exact frame," players
     //    who finish the motion slightly before their recovery ends will drop
     //    inputs. Consider allowing the motion-complete flag to persist a few

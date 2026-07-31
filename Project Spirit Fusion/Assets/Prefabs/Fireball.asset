@@ -15,8 +15,8 @@ MonoBehaviour:
   attackName: Fireball
   requiredStance: 0
   strength: 0
-  motionInput: 45
-  hitboxId: fireball
+  motionInput: '"236"'
+  hitboxId: 
   damage: 12
   hitstunFrames: 5
   hitKnockback: 3
@@ -26,3 +26,6 @@ MonoBehaviour:
   recoveryFrames: 5
   cancelWindowFrames: 5
   cancelOptions: []
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  projectileLifetime: 3

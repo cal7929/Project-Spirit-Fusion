@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class Hitbox : MonoBehaviour
 {
+    [Tooltip("Off for normal melee hitboxes (they just deactivate on schedule via AttackController). On for projectiles, which should disappear the instant they connect.")]
+    public bool destroyOnHit = false;
+
     private AttackData attackData;
     private Fighter owner;
 
@@ -41,5 +44,8 @@ public class Hitbox : MonoBehaviour
         Vector2 knockback = knockbackDir * attackData.hitKnockback;
 
         targetFighter.TakeDamage(attackData.damage, attackData.hitstunFrames, knockback, attackData.type);
+
+        if (destroyOnHit)
+            Destroy(gameObject);
     }
 }

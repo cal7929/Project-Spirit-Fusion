@@ -36,6 +36,10 @@ public class AttackController : MonoBehaviour
     [Tooltip("This fighter's own hitbox children, tagged with an id that matches AttackData.hitboxId.")]
     public List<HitboxSlot> hitboxSlots = new List<HitboxSlot>();
 
+    [Header("Projectiles")]
+    [Tooltip("Where projectile-type attacks spawn from. Defaults to this fighter's own position if left empty.")]
+    public Transform projectileSpawnPoint;
+
     //Dictionary to look for valid moves within the list
     private Dictionary<(AttackStance, AttackStrength), AttackData> normalLookup;
     private Dictionary<string, Hitbox> hitboxLookup;
@@ -65,6 +69,11 @@ public class AttackController : MonoBehaviour
         hitboxLookup = new Dictionary<string, Hitbox>();
         foreach (HitboxSlot slot in hitboxSlots)
         {
+            if (string.IsNullOrEmpty(slot.id))
+            {
+                Debug.LogWarning("A Hitbox Slot has a blank id and will be skipped.", this);
+                continue;
+            }
             hitboxLookup[slot.id] = slot.hitbox;
         }
     }
@@ -156,9 +165,19 @@ public class AttackController : MonoBehaviour
     //hitbox child even when sharing the same AttackData asset.
     Hitbox ResolveHitbox(AttackData data)
     {
-        if (string.IsNullOrEmpty(data.hitboxId)) return null;
+        if (data.IsProjectile) return null; //Projectiles manage their own Hitbox, not this fighter's.
 
-        hitboxLookup.TryGetValue(data.hitboxId, out Hitbox hitbox);
+        if (string.IsNullOrEmpty(data.hitboxId))
+        {
+            Debug.LogWarning($"{data.attackName}: no hitboxId set and this isn't a projectile move - it will do nothing on hit.", this);
+            return null;
+        }
+
+        if (!hitboxLookup.TryGetValue(data.hitboxId, out Hitbox hitbox) || hitbox == null)
+        {
+            Debug.LogWarning($"{data.attackName}: hitboxId \"{data.hitboxId}\" has no matching entry in this fighter's Hitbox Slots.", this);
+        }
+
         return hitbox;
     }
 
@@ -168,9 +187,17 @@ public class AttackController : MonoBehaviour
 
         //Startup to Active
         if (attackFrame == currentAttack.ActiveStartFrame)
-            currentHitbox?.Activate(currentAttack, fighter);
+        {
+            if (currentAttack.IsProjectile)
+                SpawnProjectile(currentAttack);
+            else
+                currentHitbox?.Activate(currentAttack, fighter);
+        }
 
-        //Active to Recovery
+        //Active to Recovery. No-op for projectiles - currentHitbox stays null
+        //for them (hitboxId is left blank on projectile AttackData assets),
+        //since the spawned projectile manages its own lifetime independently
+        //of this fighter's recovery frames.
         if (attackFrame == currentAttack.ActiveEndFrame)
             currentHitbox?.Deactivate();
 
@@ -182,6 +209,35 @@ public class AttackController : MonoBehaviour
         }
 
         attackFrame++;
+    }
+
+    //Instantiates the move's projectile prefab at projectileSpawnPoint (or
+    //this fighter's position if unset), locks in the current facing direction,
+    //and hands it off to its own Projectile/Hitbox components. From here it's
+    //fully independent of this AttackController.
+    void SpawnProjectile(AttackData data)
+    {
+        if (data.projectilePrefab == null)
+        {
+            Debug.LogWarning($"{data.attackName}: IsProjectile is true but no projectilePrefab is assigned. Nothing will spawn.", this);
+            return;
+        }
+
+        Vector3 spawnPos = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
+        GameObject instance = Instantiate(data.projectilePrefab, spawnPos, Quaternion.identity);
+
+        //Flip the projectile's visuals to match facing direction at launch.
+        Vector3 scale = instance.transform.localScale;
+        instance.transform.localScale = new Vector3(Mathf.Abs(scale.x) * fighter.facingDir, scale.y, scale.z);
+
+        Projectile projectile = instance.GetComponent<Projectile>();
+        if (projectile == null)
+        {
+            Debug.LogWarning($"{data.attackName}: projectilePrefab has no Projectile component - it will spawn but never move or activate its Hitbox.", instance);
+            return;
+        }
+
+        projectile.Launch(data, fighter, fighter.facingDir);
     }
 
     //True during the active frames or within the cancel window of recovery.

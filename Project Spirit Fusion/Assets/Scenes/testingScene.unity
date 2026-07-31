@@ -414,6 +414,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddfc6ec17c5fa1a44a2a161b264ecf7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  destroyOnHit: 0
 --- !u!61 &65120764
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -580,6 +581,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   normalMoves: []
   hitboxSlots: []
+  projectileSpawnPoint: {fileID: 0}
 --- !u!114 &101919365
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -959,6 +961,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddfc6ec17c5fa1a44a2a161b264ecf7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  destroyOnHit: 0
 --- !u!61 &313741545
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1177,6 +1180,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddfc6ec17c5fa1a44a2a161b264ecf7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  destroyOnHit: 0
 --- !u!61 &490693592
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2007,6 +2011,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6015607568074904223, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
+      propertyPath: hitboxSlots.Array.size
+      value: 9
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2058,6 +2066,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddfc6ec17c5fa1a44a2a161b264ecf7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  destroyOnHit: 0
 --- !u!61 &2083806093
 BoxCollider2D:
   m_ObjectHideFlags: 0

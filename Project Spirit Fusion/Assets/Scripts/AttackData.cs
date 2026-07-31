@@ -52,6 +52,18 @@ public class AttackData : ScriptableObject
     [Tooltip("Any move that this move can cancel into during its cancel window.")]
     public List<AttackData> cancelOptions = new List<AttackData>();
 
+    [Header("Projectile (optional)")]
+    [Tooltip("If set, this move spawns this prefab instead of activating a fixed hitboxId - used for fireball-style specials. Leave empty for normal melee moves.")]
+    public GameObject projectilePrefab;
+
+    [Tooltip("Units per second the spawned projectile travels forward.")]
+    public float projectileSpeed = 10f;
+
+    [Tooltip("Seconds before the projectile despawns itself if it hasn't hit anything.")]
+    public float projectileLifetime = 3f;
+
+    public bool IsProjectile => projectilePrefab != null;
+
     //Derived frame thresholds used by AttackController to drive phase transitions.
     public int ActiveStartFrame => startupFrames;
     public int ActiveEndFrame => startupFrames + activeFrames;
