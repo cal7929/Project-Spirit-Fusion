@@ -1,22 +1,16 @@
 using UnityEngine;
 
-//Lives on a projectile prefab (fireball, etc.) alongside a Hitbox component.
-//This script ONLY owns movement and lifetime - Hitbox still owns all hit
-//detection and damage dealing, unchanged from how melee attacks use it.
-//
-//Spawned fresh per-use by AttackController (not a pre-placed child like your
-//melee hitboxes), since a projectile needs to travel independently of the
-//fighter and multiple could be in flight at once.
+//Used alongside hitbox, attackdata, and attackcontroller to spawn a
+//projectile that travels independantly of the fighter.
 [RequireComponent(typeof(Hitbox))]
 public class Projectile : MonoBehaviour
 {
     private float speed;
     private float lifetime;
-    private int direction; //+1 or -1, locked in at spawn time
+    private int direction; 
 
-    //Called by AttackController right after Instantiate. Reads its tunables
-    //from AttackData so speed/lifetime stay data-driven like everything else,
-    //then activates its own Hitbox exactly like a melee attack would.
+    //Called by AttackController right after Instantiate. Sends the 
+    //projectile forward and then activates its own hitbox the way a fighter would, (like a mini fighter)
     public void Launch(AttackData data, Fighter owner, int facingDir)
     {
         speed = data.projectileSpeed;
@@ -25,11 +19,11 @@ public class Projectile : MonoBehaviour
 
         GetComponent<Hitbox>().Activate(data, owner);
 
-        //Safety net despawn in case it never hits anything (flies off past
-        //the stage edge, etc.) so projectiles don't live forever.
+        //If the projectile whiffs
         Destroy(gameObject, lifetime);
     }
 
+    //Movement
     void Update()
     {
         transform.position += Vector3.right * direction * speed * Time.deltaTime;

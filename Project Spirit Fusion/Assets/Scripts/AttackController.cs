@@ -18,10 +18,8 @@ public class AttackController : MonoBehaviour
         public AttackData data;
     }
 
-    //Maps a hitboxId (matching AttackData.hitboxId) to THIS fighter instance's
-    //own local Hitbox child. Wired up per-prefab in the Inspector, so each
-    //fighter resolves to its own hitbox even when multiple fighters share the
-    //same AttackData assets.
+    //Maps a hitboxId to the fighter instance's own local Hitbox child. Set in the Inspector, so each
+    //fighter resolves to its own hitbox even if multiple fighters share the same AttackData assets.(when we add those)
     [System.Serializable]
     public struct HitboxSlot
     {
@@ -32,12 +30,12 @@ public class AttackController : MonoBehaviour
     [Header("Normal Attacks")]
     public List<NormalMoveSlot> normalMoves = new List<NormalMoveSlot>();
 
+    //This fighter's own hitbox children, tagged with an id that matches AttackData.hitboxId
     [Header("Hitboxes")]
-    [Tooltip("This fighter's own hitbox children, tagged with an id that matches AttackData.hitboxId.")]
     public List<HitboxSlot> hitboxSlots = new List<HitboxSlot>();
 
+    //Where projectile-type attacks spawn from. Defaults to this fighter's own position if left empty
     [Header("Projectiles")]
-    [Tooltip("Where projectile-type attacks spawn from. Defaults to this fighter's own position if left empty.")]
     public Transform projectileSpawnPoint;
 
     //Dictionary to look for valid moves within the list
@@ -160,12 +158,10 @@ public class AttackController : MonoBehaviour
         fighter.SetState(FighterState.Attacking);
     }
 
-    //Resolves the Hitbox for this move from THIS fighter's own hitboxLookup,
-    //keyed by AttackData.hitboxId. Every fighter instance resolves to its own
-    //hitbox child even when sharing the same AttackData asset.
     Hitbox ResolveHitbox(AttackData data)
     {
-        if (data.IsProjectile) return null; //Projectiles manage their own Hitbox, not this fighter's.
+        //Projectiles manage their own Hitbox
+        if (data.IsProjectile) return null; 
 
         if (string.IsNullOrEmpty(data.hitboxId))
         {
@@ -194,10 +190,7 @@ public class AttackController : MonoBehaviour
                 currentHitbox?.Activate(currentAttack, fighter);
         }
 
-        //Active to Recovery. No-op for projectiles - currentHitbox stays null
-        //for them (hitboxId is left blank on projectile AttackData assets),
-        //since the spawned projectile manages its own lifetime independently
-        //of this fighter's recovery frames.
+        //Active to Recovery. 
         if (attackFrame == currentAttack.ActiveEndFrame)
             currentHitbox?.Deactivate();
 
@@ -211,10 +204,8 @@ public class AttackController : MonoBehaviour
         attackFrame++;
     }
 
-    //Instantiates the move's projectile prefab at projectileSpawnPoint (or
-    //this fighter's position if unset), locks in the current facing direction,
-    //and hands it off to its own Projectile/Hitbox components. From here it's
-    //fully independent of this AttackController.
+    //If the fighter has a projectile attack, which many will.
+    //Instanstantiates the projectile at the spawn point and then launches it.
     void SpawnProjectile(AttackData data)
     {
         if (data.projectilePrefab == null)
@@ -240,7 +231,7 @@ public class AttackController : MonoBehaviour
         projectile.Launch(data, fighter, fighter.facingDir);
     }
 
-    //True during the active frames or within the cancel window of recovery.
+    //True during the active frames or within the cancel window of recovery frames
     bool InCancelWindow()
     {
         if (currentAttack == null) return false;
