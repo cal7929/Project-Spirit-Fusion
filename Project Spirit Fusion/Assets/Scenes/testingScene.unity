@@ -1967,6 +1967,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 499556583082409638, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
+      propertyPath: m_Name
+      value: Fireball Origin
+      objectReference: {fileID: 0}
     - target: {fileID: 2209288291569998973, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
       propertyPath: m_Name
       value: Cole_Test
@@ -2014,6 +2018,10 @@ PrefabInstance:
     - target: {fileID: 6015607568074904223, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
       propertyPath: hitboxSlots.Array.size
       value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 6406294161344627137, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.73
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

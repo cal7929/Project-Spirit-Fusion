@@ -6,10 +6,10 @@ using System.Collections.Generic;
 //handling so that specials take priority when both trigger on the same frame.
 public class CommandParser : MonoBehaviour
 {
-    [Tooltip("All special moves this character can perform.")]
+    //All special moves this character can perform.
     public List<AttackData> specialMoves = new List<AttackData>();
 
-    [Tooltip("How many frames back to search for a motion. Larger number = more leniant timing, but more likely to perform unintentional moves.")]
+    //How many frames back to search for a motion. Larger number = more leniant timing, but more likely to perform unintentional moves.
     public int searchWindow = 20;
 
     private InputReader inputBuffer;

@@ -22,7 +22,7 @@ public class InputReader : MonoBehaviour
         //specialtagPressed
     }
 
-    [Tooltip("How many frames of history to keep. At 60fps, 30 = half a second.")]
+    //How many frames of history to keep. At 60fps, 30 = half a second.
     public int bufferSize = 30;
 
     private Queue<InputFrame> buffer = new Queue<InputFrame>();
