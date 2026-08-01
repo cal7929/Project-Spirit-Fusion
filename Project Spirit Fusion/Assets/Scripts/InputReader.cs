@@ -22,7 +22,7 @@ public class InputReader : MonoBehaviour
         //specialtagPressed
     }
 
-    //How many frames of history to keep. At 60fps, 30 = half a second.
+    [Tooltip("How many frames of history to keep. At 60fps, 30 = half a second.")]
     public int bufferSize = 30;
 
     private Queue<InputFrame> buffer = new Queue<InputFrame>();
@@ -35,9 +35,9 @@ public class InputReader : MonoBehaviour
     //5 is neutral, 4 is back, 6 is forward, 8 is up, and 2 is down (array is flipped). The others are diagonals
     private static readonly int[,] NumpadGrid =
     {
-        { 1, 2, 3 }, 
-        { 4, 5, 6 }, 
-        { 7, 8, 9 }  
+        { 1, 2, 3 },
+        { 4, 5, 6 },
+        { 7, 8, 9 }
     };
 
     void Awake()

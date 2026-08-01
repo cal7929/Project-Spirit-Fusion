@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class Hitbox : MonoBehaviour
 {
+    [Tooltip("Off for normal melee hitboxes (they just deactivate on schedule via AttackController). On for projectiles, which should disappear the instant they connect.")]
+    public bool destroyOnHit = false;
+
     private AttackData attackData;
     private Fighter owner;
-
-    [Tooltip("Should only be on for projectiles.")]
-    public bool destroyOnHit = false;
 
     //Tracks who's already been hit during the current activation, prevents bugs with multihitting 
     //on lingering hitboxes or if a single hit move hits two hittable hitboxes.
@@ -46,8 +46,6 @@ public class Hitbox : MonoBehaviour
         targetFighter.TakeDamage(attackData.damage, attackData.hitstunFrames, knockback, attackData.type);
 
         if (destroyOnHit)
-        {
             Destroy(gameObject);
-        }
     }
 }

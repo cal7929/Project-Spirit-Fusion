@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//Script that holds each attack's data to be used across other methods
 [CreateAssetMenu(fileName = "New Attack", menuName = "Project_Spirit_Fusion/Attack Data")]
 public class AttackData : ScriptableObject
 {
@@ -19,12 +18,12 @@ public class AttackData : ScriptableObject
 
     public AttackStrength strength;
 
-    [Tooltip("Leave empty for normals. Fill in with numpad notation for a special, ex: 236 for a quarter circle forward")]
+    [Tooltip("Leave empty for normals (button press only). Fill in with numpad notation for a special, ex: 236 for a quarter circle forward")]
     public string motionInput = "";
 
     public bool IsSpecialMove => !string.IsNullOrEmpty(motionInput);
 
-    [Tooltip("Matches a HitboxSlot.id on this fighter's AttackController.")]
+    [Tooltip("Matches a HitboxSlot.id on this fighter's AttackController - resolved per-instance instead of pointing at a specific GameObject, since this asset is shared across every fighter of this archetype.")]
     public string hitboxId;
 
     [Header("Stats")]
@@ -58,10 +57,10 @@ public class AttackData : ScriptableObject
     public GameObject projectilePrefab;
 
     [Tooltip("Units per second the spawned projectile travels forward.")]
-    public float projectileSpeed;
+    public float projectileSpeed = 10f;
 
     [Tooltip("Seconds before the projectile despawns itself if it hasn't hit anything.")]
-    public float projectileLifetime;
+    public float projectileLifetime = 3f;
 
     public bool IsProjectile => projectilePrefab != null;
 

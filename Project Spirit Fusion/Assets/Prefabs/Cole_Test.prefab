@@ -727,8 +727,6 @@ MonoBehaviour:
     hitbox: {fileID: 1960123676916627175}
   - id: jumpH
     hitbox: {fileID: 6879273504835029561}
-  - id: fireball
-    hitbox: {fileID: 0}
   projectileSpawnPoint: {fileID: 0}
 --- !u!114 &1679591538558719543
 MonoBehaviour:

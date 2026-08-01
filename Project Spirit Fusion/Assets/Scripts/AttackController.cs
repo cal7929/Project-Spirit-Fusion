@@ -18,7 +18,8 @@ public class AttackController : MonoBehaviour
         public AttackData data;
     }
 
-    //Maps a hitboxId that matches AttackData.hitboxId in the inspector
+    //Maps a hitboxId to the fighter instance's own local Hitbox child. Set in the Inspector, so each
+    //fighter resolves to its own hitbox even if multiple fighters share the same AttackData assets.(when we add those)
     [System.Serializable]
     public struct HitboxSlot
     {
@@ -33,7 +34,7 @@ public class AttackController : MonoBehaviour
     [Header("Hitboxes")]
     public List<HitboxSlot> hitboxSlots = new List<HitboxSlot>();
 
-    //Where projectile type attacks spawn from. Defaults to this fighter's own position if left empty
+    //Where projectile-type attacks spawn from. Defaults to this fighter's own position if left empty
     [Header("Projectiles")]
     public Transform projectileSpawnPoint;
 
@@ -47,7 +48,6 @@ public class AttackController : MonoBehaviour
 
     private AttackData currentAttack;
     private Hitbox currentHitbox;
-    private Projectile currentProjectile;
 
     //Counts up from 0
     private int attackFrame;
@@ -126,8 +126,8 @@ public class AttackController : MonoBehaviour
             }
         }
 
-        //If no attack is currently active, start the attack over.
-        //Specials take priority over normals when both happen to resolve on the same frame.
+        //If no attack is currently active, start fresh. Specials take
+        //priority over normals when both happen to resolve on the same frame.
         if (currentAttack == null && fighter.CanAct())
         {
             if (special != null)
@@ -148,7 +148,7 @@ public class AttackController : MonoBehaviour
     {
         if (data == null) return;
 
-        //Deactivate the previous hitbox immediately on a cancel
+        //Deactivate the previous hitbox immediately on a cancel.
         currentHitbox?.Deactivate();
 
         currentAttack = data;
@@ -160,8 +160,8 @@ public class AttackController : MonoBehaviour
 
     Hitbox ResolveHitbox(AttackData data)
     {
-        //Projectiles manage their own hitbox
-        if (data.IsProjectile) return null; 
+        //Projectiles manage their own Hitbox
+        if (data.IsProjectile) return null;
 
         if (string.IsNullOrEmpty(data.hitboxId))
         {
@@ -190,7 +190,7 @@ public class AttackController : MonoBehaviour
                 currentHitbox?.Activate(currentAttack, fighter);
         }
 
-        //Active to Recovery.
+        //Active to Recovery. 
         if (attackFrame == currentAttack.ActiveEndFrame)
             currentHitbox?.Deactivate();
 
@@ -204,21 +204,20 @@ public class AttackController : MonoBehaviour
         attackFrame++;
     }
 
-    //Instantiates the move's projectile (if it has one) at the projectileSpawnPoint
+    //If the fighter has a projectile attack, which many will.
+    //Instanstantiates the projectile at the spawn point and then launches it.
     void SpawnProjectile(AttackData data)
     {
         if (data.projectilePrefab == null)
         {
+            Debug.LogWarning($"{data.attackName}: IsProjectile is true but no projectilePrefab is assigned. Nothing will spawn.", this);
             return;
         }
-
-        //Only one projectile may exist on screen at a time, prevents spamming (may diable for boss character :))
-        if (currentProjectile != null) return;
 
         Vector3 spawnPos = projectileSpawnPoint != null ? projectileSpawnPoint.position : transform.position;
         GameObject instance = Instantiate(data.projectilePrefab, spawnPos, Quaternion.identity);
 
-        //Flip to match facing direction at launch.
+        //Flip the projectile's visuals to match facing direction at launch.
         Vector3 scale = instance.transform.localScale;
         instance.transform.localScale = new Vector3(Mathf.Abs(scale.x) * fighter.facingDir, scale.y, scale.z);
 
@@ -229,18 +228,10 @@ public class AttackController : MonoBehaviour
             return;
         }
 
-        currentProjectile = projectile;
-        projectile.OnDespawned += ClearProjectileSlot;
         projectile.Launch(data, fighter, fighter.facingDir);
     }
 
-    //Resets projectile so another can be used
-    void ClearProjectileSlot()
-    {
-        currentProjectile = null;
-    }
-
-    //True during the active frames or within the cancel window of recovery.
+    //True during the active frames or within the cancel window of recovery frames
     bool InCancelWindow()
     {
         if (currentAttack == null) return false;
@@ -256,8 +247,6 @@ public class AttackController : MonoBehaviour
         attackFrame = 0;
 
         if (fighter.currentState == FighterState.Attacking)
-        {
             fighter.SetState(FighterState.Idle);
-        }
     }
 }
