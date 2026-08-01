@@ -1971,6 +1971,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Fireball Origin
       objectReference: {fileID: 0}
+    - target: {fileID: 1679591538558719543, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
+      propertyPath: bufferSize
+      value: 30
+      objectReference: {fileID: 0}
     - target: {fileID: 2209288291569998973, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
       propertyPath: m_Name
       value: Cole_Test
@@ -2022,6 +2026,10 @@ PrefabInstance:
     - target: {fileID: 6406294161344627137, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.73
+      objectReference: {fileID: 0}
+    - target: {fileID: 8189761818025349434, guid: 1d7772c9d08f351439f921a43326c4f3, type: 3}
+      propertyPath: searchWindow
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
