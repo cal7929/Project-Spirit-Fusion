@@ -1,86 +1,62 @@
 using UnityEngine;
 
-public enum MatchState
-{
-    RoundStart,
-    Fighting,
-    RoundEnd,
-    MatchEnd
-}
-
+//Training-mode-only GameManager. Match-flow features (rounds, KO wins, round
+//timer, match end) are vs-mode scope and deliberately NOT implemented here -
+//see the note at the bottom for where that slots back in later.
+//
+//Holds one TagController per side - Player 1's team, and Player 2's team
+//(currently the training dummy team). Doesn't need to know or care whether a
+//team's active fighter is player-controlled or a dummy; TagController
+//already abstracts "whichever fighter is currently in play" identically for
+//both, so this script only ever deals in that abstraction.
 public class GameManager : MonoBehaviour
 {
-    [Header("Fighters")]
-    public Fighter fighterA;
-    public Fighter fighterB;
+    [Header("Teams")]
+    public TagController player1Team;
+    public TagController player2Team;
 
-    [Header("Round Settings")]
-    public float roundTime = 99f;
-    public int roundsToWin = 2;
-    public float roundStartDelay = 1f;
-    public float roundEndDelay = 2f;
-
-    //Prevents fighters from colliding with eachother in awkward ways, also prevents them from standing on eachother
+    //Prevents fighters from colliding with each other in awkward ways, also
+    //prevents them from standing on each other.
     [Header("Pushbox Settings")]
     public float pushboxWidth = 1f;
     public float pushboxHeightTolerance = 1.5f;
 
-    [Header("Runtime State")]
-    public MatchState currentState = MatchState.RoundStart;
-    public float currentTime;
-    public int roundsWonA;
-    public int roundsWonB;
-
-    private Vector3 startPosA;
-    private Vector3 startPosB;
-    private float stateTimer;
-
-    //Cached for pushbox use in FixedUpdate (avoids GetComponent every frame).
-    private Rigidbody2D rbA;
-    private Rigidbody2D rbB;
-
     void Start()
     {
-        if (fighterA == null || fighterB == null)
+        if (player1Team == null || player2Team == null)
         {
-            Debug.LogError("GameManager is missing a fighter reference, assign both in the Inspector.");
+            Debug.LogError("GameManager is missing a team reference, assign both in the Inspector.");
             enabled = false;
             return;
         }
 
-        fighterA.SetOpponent(fighterB.transform);
-        fighterB.SetOpponent(fighterA.transform);
+        //Every fighter on both teams needs an opponent reference before it's
+        //ever tagged in - not just whichever one starts active. Wired here
+        //rather than inside TagController since cross-team pairing is
+        //GameManager's job, not something one team should know about the
+        //other on its own.
+        foreach (Fighter fighter in player1Team.AllFighters)
+            fighter.SetOpponent(player2Team.ActiveFighter.transform);
 
-        //Fighters body colliders should not physically interact with each other.
-        //Hits are still detected by the separate hitbox system.
-        IgnoreCollisionBetween(fighterA, fighterB);
+        foreach (Fighter fighter in player2Team.AllFighters)
+            fighter.SetOpponent(player1Team.ActiveFighter.transform);
 
-        rbA = fighterA.GetComponent<Rigidbody2D>();
-        rbB = fighterB.GetComponent<Rigidbody2D>();
-
-        startPosA = fighterA.transform.position;
-        startPosB = fighterB.transform.position;
-
-        StartRound();
+        //No fighter should ever physically collide with anyone on the other
+        //team - including whichever one is currently benched, since both
+        //team members are briefly active at once during a tag slide.
+        foreach (Fighter a in player1Team.AllFighters)
+            foreach (Fighter b in player2Team.AllFighters)
+                IgnoreCollisionBetween(a, b);
     }
 
     void Update()
     {
-        switch (currentState)
-        {
-            case MatchState.RoundStart:
-                TickRoundStart();
-                break;
-            case MatchState.Fighting:
-                TickFighting();
-                break;
-            case MatchState.RoundEnd:
-                TickRoundEnd();
-                break;
-            case MatchState.MatchEnd:
-                //Once more detail is implemented things will go here (graphics etc.)
-                break;
-        }
+        //Opponent tracking has to stay live, not a one-time Start()
+        //assignment - either team can tag mid-fight, and whoever's active
+        //needs to always be facing/blocking against whoever the OTHER team
+        //currently has in play, not whoever happened to be active at Start().
+        player1Team.ActiveFighter.SetOpponent(player2Team.ActiveFighter.transform);
+        player2Team.ActiveFighter.SetOpponent(player1Team.ActiveFighter.transform);
     }
 
     void FixedUpdate()
@@ -88,107 +64,17 @@ public class GameManager : MonoBehaviour
         ResolvePushbox();
     }
 
-    void TickRoundStart()
-    {
-        stateTimer -= Time.deltaTime;
-        if (stateTimer <= 0f)
-        {
-            SetFightersEnabled(true);
-            currentState = MatchState.Fighting;
-        }
-    }
-
-    void TickFighting()
-    {
-        currentTime -= Time.deltaTime;
-
-        bool aDead = fighterA.currentState == FighterState.Dead;
-        bool bDead = fighterB.currentState == FighterState.Dead;
-
-        if (aDead || bDead || currentTime <= 0f)
-        {
-            EndRound(aDead, bDead);
-        }
-    }
-
-    void EndRound(bool aDead, bool bDead)
-    {
-        SetFightersEnabled(false);
-        currentState = MatchState.RoundEnd;
-        stateTimer = roundEndDelay;
-
-        if (aDead && bDead)
-        {
-            Debug.Log("Double KO, round draw.");
-        }
-        else if (aDead)
-        {
-            roundsWonB++;
-            Debug.Log(fighterB.name + " wins the round.");
-        }
-        else if (bDead)
-        {
-            roundsWonA++;
-            Debug.Log(fighterA.name + " wins the round.");
-        }
-        else if (fighterA.currentHealth > fighterB.currentHealth)
-        {
-            roundsWonA++;
-            Debug.Log("Time's Up, " + fighterA.name + " wins the round.");
-        }
-        else if (fighterB.currentHealth > fighterA.currentHealth)
-        {
-            roundsWonB++;
-            Debug.Log("Time's Up, " + fighterB.name + " wins the round.");
-        }
-        else
-        {
-            Debug.Log("Time-out, round draw.");
-        }
-    }
-
-    void TickRoundEnd()
-    {
-        stateTimer -= Time.deltaTime;
-        if (stateTimer > 0f) return;
-
-        if (roundsWonA >= roundsToWin || roundsWonB >= roundsToWin)
-        {
-            currentState = MatchState.MatchEnd;
-            string winnerName = roundsWonA > roundsWonB ? fighterA.name : fighterB.name;
-            Debug.Log(winnerName + " wins the match!");
-        }
-        else
-        {
-            StartRound();
-        }
-    }
-
-    void StartRound()
-    {
-        ResetFighter(fighterA, startPosA);
-        ResetFighter(fighterB, startPosB);
-
-        SetFightersEnabled(false);
-        currentTime = roundTime;
-        stateTimer = roundStartDelay;
-        currentState = MatchState.RoundStart;
-    }
-
-    void ResetFighter(Fighter fighter, Vector3 startPos)
-    {
-        fighter.currentHealth = fighter.maxHealth;
-        fighter.SetState(FighterState.Idle);
-        fighter.transform.position = startPos;
-
-        Rigidbody2D rb = fighter.GetComponent<Rigidbody2D>();
-        if (rb != null) rb.linearVelocity = Vector2.zero;
-    }
-
-    //Prevents fighters from overlapping horizontally.
-    //Skips when one fighter is clearly jumping over the other (vertical gap check), or when either fighter is dead/knocked down.
+    //Only pushes apart whichever fighter is currently active on each team -
+    //the benched fighter is deactivated and isn't part of the physical scene,
+    //so it never needs a pushbox check.
     void ResolvePushbox()
     {
+        Fighter fighterA = player1Team.ActiveFighter;
+        Fighter fighterB = player2Team.ActiveFighter;
+
+        Rigidbody2D rbA = player1Team.ActiveRigidbody;
+        Rigidbody2D rbB = player2Team.ActiveRigidbody;
+
         if (rbA == null || rbB == null) return;
         if (fighterA.currentState == FighterState.Dead || fighterB.currentState == FighterState.Dead) return;
         if (fighterA.currentState == FighterState.Knockdown || fighterB.currentState == FighterState.Knockdown) return;
@@ -221,19 +107,14 @@ public class GameManager : MonoBehaviour
             Physics2D.IgnoreCollision(colA, colB);
     }
 
-    //Disables Movement and AttackController during round start and round end
-    void SetFightersEnabled(bool isEnabled)
-    {
-        SetFighterEnabled(fighterA, isEnabled);
-        SetFighterEnabled(fighterB, isEnabled);
-    }
-
-    void SetFighterEnabled(Fighter fighter, bool isEnabled)
-    {
-        Movement movement = fighter.GetComponent<Movement>();
-        if (movement != null) movement.enabled = isEnabled;
-
-        AttackController attackController = fighter.GetComponent<AttackController>();
-        if (attackController != null) attackController.enabled = isEnabled;
-    }
+    //---- Deliberately not implemented yet (vs-mode scope) ----
+    //
+    // Round start/end states, round timer, KO-based round wins, match-end
+    // win screens, and fighter health/position reset between rounds all
+    // belong here once vs mode is back in scope. The previous single-Fighter
+    // version of this script had a working version of all of that (MatchState,
+    // roundsWon tracking, StartRound/EndRound/ResetFighter) - worth adapting
+    // from directly once teams need round-based resets instead of a single
+    // fighter each (e.g. ResetFighter would need to reset BOTH team members
+    // and re-bench whichever wasn't active, not just one Fighter).
 }

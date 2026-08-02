@@ -53,6 +53,16 @@ public class TagController : MonoBehaviour
     private bool isTagging = false;
     private float cooldownTimer = 0f;
 
+    //Whichever fighter is currently in play - what GameManager should treat
+    //as "this team's fighter" for opponent-tracking and pushbox purposes.
+    public Fighter ActiveFighter => rigs[activeIndex].fighter;
+    public Rigidbody2D ActiveRigidbody => rigs[activeIndex].rb;
+
+    //Both fighters regardless of active/benched state - GameManager needs
+    //this once at Start to wire up opponent references and cross-team
+    //collision ignoring for whoever ISN'T active yet too.
+    public Fighter[] AllFighters => new Fighter[] { rigs[0].fighter, rigs[1].fighter };
+
     void Awake()
     {
         rigs[0] = BuildRig(fighter1);
