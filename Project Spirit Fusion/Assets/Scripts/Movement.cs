@@ -47,6 +47,21 @@ public class Movement : MonoBehaviour
 
     void Update()
     {
+        //Keep AttackStance fresh every rendered frame, not just each physics
+        //step - AttackController reads fighter.currentStance during its own
+        //Update() to decide which normal to fire, and this used to only get
+        //refreshed in FixedUpdate. That gap meant a crouch key pressed in
+        //the same frame as an attack button could still see the PREVIOUS
+        //physics step's stance, occasionally firing a standing move while
+        //actually crouching (or vice versa). Must run before the CanAct/
+        //Attacking early returns below, for the same reason the FixedUpdate
+        //copy does: stance has to stay correct even mid-attack.
+        //
+        //Requires Movement to run before AttackController in Script
+        //Execution Order (same reasoning as InputReader before
+        //AttackController) so this is guaranteed fresh before HandleInput().
+        UpdateAttackStance(grounded);
+
         if (!fighter.CanAct()) return;
 
         if (fighter.currentState == FighterState.Attacking)

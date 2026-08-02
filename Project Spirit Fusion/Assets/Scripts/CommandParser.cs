@@ -20,21 +20,36 @@ public class CommandParser : MonoBehaviour
     }
 
     //Call once per frame. Returns the AttackData for the first special whose
-    //motion was completed with a button press on this frame.
+    //motion had already completed by the time of the most recent button
+    //press within the buffer window - not just on this exact literal frame.
+    //This is what lets a player finish 236+P a few frames before their
+    //recovery/hitstun ends without the input being dropped: instead of
+    //requiring "motion complete AND button pressed on this same instant,"
+    //the completed motion+button combo stays valid for the rest of
+    //searchWindow's frames, exactly like real fighting-game input buffering.
     public AttackData TryParseSpecial()
     {
         InputReader.InputFrame[] recent = inputBuffer.GetRecentFrames(searchWindow);
         if (recent.Length == 0) return null;
 
-        InputReader.InputFrame last = recent[recent.Length - 1];
-        bool buttonThisFrame = last.lightPressed || last.mediumPressed || last.heavyPressed;
-        if (!buttonThisFrame) return null;
-
-        foreach (AttackData move in specialMoves)
+        //Scan from the most recent frame backward so the freshest valid
+        //button press wins if more than one still qualifies.
+        for (int i = recent.Length - 1; i >= 0; i--)
         {
-            if (!move.IsSpecialMove) continue;
-            if (MotionMatches(move.motionInput, recent))
-                return move;
+            InputReader.InputFrame frame = recent[i];
+            bool buttonPressed = frame.lightPressed || frame.mediumPressed || frame.heavyPressed;
+            if (!buttonPressed) continue;
+
+            foreach (AttackData move in specialMoves)
+            {
+                if (!move.IsSpecialMove) continue;
+
+                //Only frames up to and including this button press count -
+                //the motion must have completed BEFORE or AT the button, not
+                //using frames that come after it.
+                if (MotionMatches(move.motionInput, recent, i + 1))
+                    return move;
+            }
         }
 
         return null;
@@ -57,16 +72,19 @@ public class CommandParser : MonoBehaviour
         { 9, new[] { 6, 8 } },
     };
 
-    //Checks the frames for any matching motion inputs. A long run of frames
-    //holding the same direction only counts once, so holding down for
+    //Checks frames[0..frameCount) for a matching motion input. A long run of
+    //frames holding the same direction only counts once, so holding down for
     //several frames doesn't require several separate matching frames.
-    bool MotionMatches(string motion, InputReader.InputFrame[] frames)
+    //frameCount lets TryParseSpecial check "did the motion complete by THIS
+    //button press" without allocating a new sub-array per attempt.
+    bool MotionMatches(string motion, InputReader.InputFrame[] frames, int frameCount)
     {
         int motionIndex = 0;
         int lastDirection = -1;
 
-        foreach (InputReader.InputFrame frame in frames)
+        for (int i = 0; i < frameCount; i++)
         {
+            InputReader.InputFrame frame = frames[i];
             if (motionIndex >= motion.Length) break;
 
             int wantDigit = motion[motionIndex] - '0';
@@ -106,10 +124,4 @@ public class CommandParser : MonoBehaviour
     // 2. Priority between multiple matching specials: if two moves' motions
     //    both matched this frame, decide a tie-break (e.g. prefer the one
     //    needing the longer/more specific motion).
-    //
-    // 3. Buffering during hitstop/animation lock: if the parser only checks
-    //    "button pressed AND motion matched on the same exact frame," players
-    //    who finish the motion slightly before their recovery ends will drop
-    //    inputs. Consider allowing the motion-complete flag to persist a few
-    //    frames waiting for the button, not just the reverse.
 }

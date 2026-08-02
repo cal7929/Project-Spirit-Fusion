@@ -16,9 +16,9 @@ public class InputReader : MonoBehaviour
         public bool lightPressed;
         public bool mediumPressed;
         public bool heavyPressed;
+        public bool tagPressed;
 
         //Future inputs
-        //tagPressed
         //specialtagPressed
     }
 
@@ -63,7 +63,8 @@ public class InputReader : MonoBehaviour
             direction = direction,
             lightPressed = Keyboard.current.jKey.wasPressedThisFrame,
             mediumPressed = Keyboard.current.kKey.wasPressedThisFrame,
-            heavyPressed = Keyboard.current.lKey.wasPressedThisFrame
+            heavyPressed = Keyboard.current.lKey.wasPressedThisFrame,
+            tagPressed = Keyboard.current.uKey.wasPressedThisFrame
         };
 
         buffer.Enqueue(lastFrame);
