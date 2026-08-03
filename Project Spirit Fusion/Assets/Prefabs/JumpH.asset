@@ -19,7 +19,7 @@ MonoBehaviour:
   hitboxId: jumpH
   damage: 18
   hitstunFrames: 6
-  hitKnockback: 4
+  hitKnockback: 10
   type: 2
   startupFrames: 8
   activeFrames: 6
@@ -32,3 +32,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8052e824e51f2544c8ce91cb92732d48, type: 2}
   - {fileID: 11400000, guid: 4eca3087676a4e942ad9bdf931e5073d, type: 2}
   - {fileID: 11400000, guid: 217c36d7ca856f64991c0f113d19cd6d, type: 2}
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  projectileLifetime: 3

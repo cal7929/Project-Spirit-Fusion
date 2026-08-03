@@ -19,7 +19,7 @@ MonoBehaviour:
   hitboxId: crouchM
   damage: 10
   hitstunFrames: 4
-  hitKnockback: 3
+  hitKnockback: 6
   type: 1
   startupFrames: 5
   activeFrames: 3
@@ -29,3 +29,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eea0374869fc62849acbfbd821e2f866, type: 2}
   - {fileID: 11400000, guid: 217c36d7ca856f64991c0f113d19cd6d, type: 2}
   - {fileID: 11400000, guid: e8a72e58848f6a2489205792dd3327ec, type: 2}
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  projectileLifetime: 3

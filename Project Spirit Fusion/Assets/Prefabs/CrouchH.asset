@@ -19,7 +19,7 @@ MonoBehaviour:
   hitboxId: crouchH
   damage: 18
   hitstunFrames: 6
-  hitKnockback: 4
+  hitKnockback: 10
   type: 1
   startupFrames: 8
   activeFrames: 6

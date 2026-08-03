@@ -19,7 +19,7 @@ MonoBehaviour:
   hitboxId: standH
   damage: 18
   hitstunFrames: 6
-  hitKnockback: 4
+  hitKnockback: 10
   type: 0
   startupFrames: 8
   activeFrames: 6
@@ -27,3 +27,6 @@ MonoBehaviour:
   cancelWindowFrames: 5
   cancelOptions:
   - {fileID: 11400000, guid: e8a72e58848f6a2489205792dd3327ec, type: 2}
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  projectileLifetime: 3

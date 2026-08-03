@@ -19,10 +19,13 @@ MonoBehaviour:
   hitboxId: jumpM
   damage: 10
   hitstunFrames: 4
-  hitKnockback: 3
+  hitKnockback: 6
   type: 2
   startupFrames: 5
   activeFrames: 3
   recoveryFrames: 3
   cancelWindowFrames: 2
   cancelOptions: []
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  projectileLifetime: 3
