@@ -1,14 +1,7 @@
 using UnityEngine;
 
-//Training-mode-only GameManager. Match-flow features (rounds, KO wins, round
-//timer, match end) are vs-mode scope and deliberately NOT implemented here -
-//see the note at the bottom for where that slots back in later.
-//
-//Holds one TagController per side - Player 1's team, and Player 2's team
-//(currently the training dummy team). Doesn't need to know or care whether a
-//team's active fighter is player-controlled or a dummy; TagController
-//already abstracts "whichever fighter is currently in play" identically for
-//both, so this script only ever deals in that abstraction.
+//For the demo of this game only training mode is taken into account here.
+//However VS mode woun't be that much to implement, just trying to stay ins cope and focus on other things.
 public class GameManager : MonoBehaviour
 {
     [Header("Teams")]
@@ -39,18 +32,17 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // Opponent tracking has to stay live
+        // Always track who is the opponent regardless of who's currently tagged in
         player1Team.ActiveFighter.SetOpponent(player2Team.ActiveFighter.transform);
         player2Team.ActiveFighter.SetOpponent(player1Team.ActiveFighter.transform);
 
-        // Unity deletes Physics2D.IgnoreCollision rules when a GameObject is deactivated.
-        // Continuously applying it here ensures fighters immediately regain their 
-        // pushbox logic the instant they are tagged back in.
+        //Unity auto deletes Physics2D.IgnoreCollision rules when a GameObject is deactivated.
+        //This continuously applies it so its never lost after a tag. (could also be fixed by adding a tagged out state but we'll see)
         foreach (Fighter a in player1Team.AllFighters)
         {
             foreach (Fighter b in player2Team.AllFighters)
             {
-                // Only apply if both are currently active so Unity doesn't throw warnings
+                //Only apply if both are currently active so Unity doesn't give warnings
                 if (a.gameObject.activeInHierarchy && b.gameObject.activeInHierarchy)
                 {
                     IgnoreCollisionBetween(a, b);
@@ -64,9 +56,8 @@ public class GameManager : MonoBehaviour
         ResolvePushbox();
     }
 
-    //Only pushes apart whichever fighter is currently active on each team -
-    //the benched fighter is deactivated and isn't part of the physical scene,
-    //so it never needs a pushbox check.
+    //Only pushes apart whichever fighter is currently active on each team
+    //the benched fighter is deactivated and isn't part of the scene, so it never needs a pushbox check.
     void ResolvePushbox()
     {
         Fighter fighterA = player1Team.ActiveFighter;
@@ -82,7 +73,7 @@ public class GameManager : MonoBehaviour
         Vector2 posA = rbA.position;
         Vector2 posB = rbB.position;
 
-        //Skip the push if one fighter is mid-jump.
+        //Skip the push if one fighter is jumping.
         float verticalGap = Mathf.Abs(posA.y - posB.y);
         if (verticalGap > pushboxHeightTolerance) return;
 
@@ -106,15 +97,4 @@ public class GameManager : MonoBehaviour
         if (colA != null && colB != null)
             Physics2D.IgnoreCollision(colA, colB);
     }
-
-    //---- Deliberately not implemented yet (vs-mode scope) ----
-    //
-    // Round start/end states, round timer, KO-based round wins, match-end
-    // win screens, and fighter health/position reset between rounds all
-    // belong here once vs mode is back in scope. The previous single-Fighter
-    // version of this script had a working version of all of that (MatchState,
-    // roundsWon tracking, StartRound/EndRound/ResetFighter) - worth adapting
-    // from directly once teams need round-based resets instead of a single
-    // fighter each (e.g. ResetFighter would need to reset BOTH team members
-    // and re-bench whichever wasn't active, not just one Fighter).
 }

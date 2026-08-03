@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//Script that contains all the relevant info for a move in the game. 
 [CreateAssetMenu(fileName = "New Attack", menuName = "Project_Spirit_Fusion/Attack Data")]
 public class AttackData : ScriptableObject
 {

@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class Hitbox : MonoBehaviour
 {
-    [Tooltip("Off for normal melee hitboxes (they just deactivate on schedule via AttackController). On for projectiles, which should disappear the instant they connect.")]
+    [Tooltip("Only enable for projectile attacks")]
     public bool destroyOnHit = false;
 
     private AttackData attackData;

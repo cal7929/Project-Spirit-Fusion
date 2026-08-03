@@ -2,8 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 
 //Watches InputBuffer for known special-move motion notation and returns the matching AttackData when
-//one is completed. AttackController calls TryParseSpecial() once per frame
-//alongside its normal-attack handling so that specials take priority when both trigger on the same frame.
+//one is completed. AttackController calls TryParseSpecial() once per frame alongside its normal-attack
+//handling so that specials take priority when both trigger on the same frame.
 public class CommandParser : MonoBehaviour
 {
     [Tooltip("All special moves this character can perform.")]
@@ -20,46 +20,49 @@ public class CommandParser : MonoBehaviour
     }
 
     //Call once per frame. Returns the AttackData for the first special whose
-    //motion had already completed by the time of the most recent button
-    //press within the buffer window - not just on this exact literal frame.
-    //This is what lets a player finish 236+P a few frames before their
-    //recovery/hitstun ends without the input being dropped: instead of
-    //requiring "motion complete AND button pressed on this same instant,"
-    //the completed motion+button combo stays valid for the rest of
-    //searchWindow's frames, exactly like real fighting-game input buffering.
+    //motion had already completed by the time of the correct button
+    //strength press within the buffer window.
     public AttackData TryParseSpecial()
     {
         InputReader.InputFrame[] recent = inputBuffer.GetRecentFrames(searchWindow);
         if (recent.Length == 0) return null;
 
-        //Scan from the most recent frame backward so the freshest valid
+        //Scan from the most recent frame backward so the newest valid
         //button press wins if more than one still qualifies.
         for (int i = recent.Length - 1; i >= 0; i--)
         {
             InputReader.InputFrame frame = recent[i];
-            bool buttonPressed = frame.lightPressed || frame.mediumPressed || frame.heavyPressed;
-            if (!buttonPressed) continue;
+
+            //Determine which strength button if any was pressed on this exact frame
+            AttackStrength? pressedStrength = null;
+            if (frame.lightPressed) pressedStrength = AttackStrength.Light;
+            else if (frame.mediumPressed) pressedStrength = AttackStrength.Medium;
+            else if (frame.heavyPressed) pressedStrength = AttackStrength.Heavy;
+
+            if (pressedStrength == null) continue;
 
             foreach (AttackData move in specialMoves)
             {
                 if (!move.IsSpecialMove) continue;
 
-                //Only frames up to and including this button press count -
+                //The special move must match the exact strength of the button pressed
+                if (move.strength != pressedStrength.Value) continue;
+
+                //Only frames up to and including this button press count
                 //the motion must have completed BEFORE or AT the button, not
                 //using frames that come after it.
                 if (MotionMatches(move.motionInput, recent, i + 1))
+                {
                     return move;
+                }
             }
         }
 
         return null;
     }
 
-    //Which numpad directions are "one step" from each other on the grid,
-    //used to allow a skipped diagonal frame (e.g. rolling straight from 2 to
-    //6 without a frame ever reading 3) to still count as having passed
-    //through it. Only adjacency, not arbitrary jumps - 2 straight to 8 still
-    //fails, since that's not a legitimate roll-through.
+    //Allows leniant motion inputs, standard in all fighting games past street fighter 1. Meaning 
+    //diagonals can be skipped when doing a quarter circle for example.
     private static readonly Dictionary<int, int[]> Adjacent = new Dictionary<int, int[]>
     {
         { 1, new[] { 2, 4 } },
@@ -72,11 +75,7 @@ public class CommandParser : MonoBehaviour
         { 9, new[] { 6, 8 } },
     };
 
-    //Checks frames[0..frameCount) for a matching motion input. A long run of
-    //frames holding the same direction only counts once, so holding down for
-    //several frames doesn't require several separate matching frames.
-    //frameCount lets TryParseSpecial check "did the motion complete by THIS
-    //button press" without allocating a new sub-array per attempt.
+    //Checks all the frames for a string of inputs that match a known move
     bool MotionMatches(string motion, InputReader.InputFrame[] frames, int frameCount)
     {
         int motionIndex = 0;
@@ -93,10 +92,7 @@ public class CommandParser : MonoBehaviour
             {
                 motionIndex++;
             }
-            //Diagonal leniency: if this frame skipped straight to the NEXT
-            //required digit, and that digit is adjacent to the one we
-            //skipped, count both steps at once - the player rolled through
-            //the diagonal too fast for it to land on its own frame.
+            //Diagonal leniency
             else if (motionIndex + 1 < motion.Length)
             {
                 int nextWantDigit = motion[motionIndex + 1] - '0';
@@ -114,14 +110,4 @@ public class CommandParser : MonoBehaviour
 
         return motionIndex >= motion.Length;
     }
-
-    //---- Where to take this next (not implemented here on purpose) ----
-    //
-    // 1. Charge motions (e.g. "[4]6" = hold back 40+ frames, then forward):
-    //    needs tracking HOW LONG a direction was held, not just that it
-    //    appeared - a different check than simple subsequence matching.
-    //
-    // 2. Priority between multiple matching specials: if two moves' motions
-    //    both matched this frame, decide a tie-break (e.g. prefer the one
-    //    needing the longer/more specific motion).
 }

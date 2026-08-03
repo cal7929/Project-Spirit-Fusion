@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-//The state machine that takes info given to it by CommandParser
+//The state machine that takes info given to it by CommandParser (which needs an InputReader)
 //and executes the actual attacks and specials based on the given data.
 [RequireComponent(typeof(InputReader))]
 [RequireComponent(typeof(CommandParser))]
@@ -42,11 +42,7 @@ public class AttackController : MonoBehaviour
     private Dictionary<(AttackStance, AttackStrength), AttackData> normalLookup;
     private Dictionary<string, Hitbox> hitboxLookup;
 
-    //Tracks each projectile-type move's currently in-flight instance (if
-    //any), keyed by AttackData, so this fighter can't throw a second one
-    //until the first is destroyed. Lives on THIS AttackController instance,
-    //so two fighters sharing the same AttackData asset don't block each
-    //other - same per-instance reasoning as hitboxLookup above.
+    //Keeps track of all the fighters projectiles they own, so multiple can't be out at once (balancing issue)
     private Dictionary<AttackData, GameObject> activeProjectiles = new Dictionary<AttackData, GameObject>();
 
     private Fighter fighter;
@@ -76,7 +72,7 @@ public class AttackController : MonoBehaviour
         {
             if (string.IsNullOrEmpty(slot.id))
             {
-                Debug.LogWarning("A Hitbox Slot has a blank id and will be skipped.", this);
+                Debug.LogWarning("A Hitbox Slot has a blank id.", this);
                 continue;
             }
             hitboxLookup[slot.id] = slot.hitbox;
@@ -89,8 +85,7 @@ public class AttackController : MonoBehaviour
         HandleInput();
     }
 
-    //Frame counter and phase transitions run in FixedUpdate so
-    //they advance exactly once per frame
+    //Frame counter and phase transitions run in FixedUpdate so they advance exactly once per frame
     void FixedUpdate()
     {
         AdvanceAttack();
@@ -100,12 +95,11 @@ public class AttackController : MonoBehaviour
     {
         AttackData special = commandParser.TryParseSpecial();
 
-        //A projectile can't be thrown again until its previous instance is
-        //gone. Cleared here (not by an event from Hitbox/Projectile) since
-        //Unity's Object equality treats a destroyed GameObject as == null,
-        //so this check stays correct automatically once it hits or expires.
+        //A projectile can't be thrown again until its previous instance is gone
         if (special != null && IsProjectileOnCooldown(special))
+        {
             special = null;
+        }
 
         InputReader.InputFrame last = inputReader.Latest;
 
@@ -163,13 +157,7 @@ public class AttackController : MonoBehaviour
     {
         if (data == null) return;
 
-        //Defensive stance check. normalLookup/cancelOptions are already
-        //keyed by stance, and Movement now keeps currentStance fresh every
-        //Update (see Movement.cs) specifically to prevent stale-stance false
-        //triggers - but this is a hard backstop against ANY path (including
-        //specials, which don't go through normalLookup) starting a move
-        //whose required stance doesn't match what the fighter is actually
-        //doing right now.
+        //Makes sure that the fighter is in the correct stance to perform the attack
         if (data.requiredStance != fighter.currentStance) return;
 
         //Deactivate the previous hitbox immediately on a cancel.
@@ -183,9 +171,7 @@ public class AttackController : MonoBehaviour
     }
 
     //Returns true if this move is a projectile-type special and its previous
-    //instance is still alive. Unity's Object equality treats a destroyed
-    //UnityEngine.Object as == null, so once the tracked instance hits or
-    //expires, this correctly reports "not on cooldown" with no extra cleanup.
+    //instance is still alive.
     bool IsProjectileOnCooldown(AttackData data)
     {
         if (!data.IsProjectile) return false;
@@ -215,9 +201,7 @@ public class AttackController : MonoBehaviour
     {
         if (currentAttack == null) return;
 
-        //Jumping attacks must end the instant the fighter lands - a jump-in
-        //normal shouldn't keep playing out (and hitting people) once
-        //grounded, since its hitbox/animation is only meant for the air.
+        //Jumping attacks must end the instant the fighter lands
         if (currentAttack.requiredStance == AttackStance.Jumping && fighter.currentStance != AttackStance.Jumping)
         {
             EndAttack();

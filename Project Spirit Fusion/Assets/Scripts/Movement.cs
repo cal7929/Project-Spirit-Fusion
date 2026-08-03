@@ -23,8 +23,9 @@ public class Movement : MonoBehaviour
     [Header("Dash")]
     public float dashSpeed = 18f;
     public float dashDuration = 0.2f;
-    public float doubleTapWindow = 0.25f; // Max seconds between taps
+    public float doubleTapWindow = 0.25f; 
 
+    //To track when the taps were pressed to avoid false dashing
     private float lastRightTapTime;
     private float lastLeftTapTime;
     private float dashTimer;
@@ -36,7 +37,7 @@ public class Movement : MonoBehaviour
     private bool jumpHeld;
     private bool isCrouching = false;
 
-    //Cached once per physics step so Update() and FixedUpdate() don't each fire their own raycast.
+    //Saved once per physics step so Update() and FixedUpdate() don't each fire their own raycast.
     private bool grounded;
 
     private Vector3 standingScale;
@@ -98,18 +99,24 @@ public class Movement : MonoBehaviour
     void UpdateAttackStance(bool isGrounded)
     {
         if (!isGrounded)
+        {
             fighter.SetStance(AttackStance.Jumping);
-        else if (inputReader.Latest.isCrouchHeld) // Swapped from sKey
+        }
+        else if (inputReader.Latest.isCrouchHeld)
+        {
             fighter.SetStance(AttackStance.Crouching);
+        }
         else
+        {
             fighter.SetStance(AttackStance.Standing);
+        }
     }
 
     void HandleGroundedInput()
     {
         if (!grounded) return;
 
-        // Don't read normal movement inputs if we are already dashing
+        //Can't move during the dash
         if (fighter.currentState == FighterState.Dashing) return;
 
         if (inputReader.Latest.isCrouchHeld)
@@ -126,7 +133,7 @@ public class Movement : MonoBehaviour
 
             float currentRawX = inputReader.Latest.rawX;
 
-            // Detect a fresh tap to the left (-1) or right (1)
+            //Detect a fresh tap back or forwad
             if (currentRawX != 0f && lastRawX == 0f)
             {
                 if (currentRawX < 0f)
@@ -147,14 +154,13 @@ public class Movement : MonoBehaviour
 
             lastRawX = currentRawX;
 
-            // Normal movement
+            //Normal movement
             moveInput = currentRawX;
         }
     }
 
     void HandleJumpInput()
     {
-        // Swapped from wKey checks
         if (inputReader.Latest.isJumpPressed && fighter.currentState != FighterState.Crouching && grounded)
         {
             jumpPressed = true;
@@ -165,7 +171,7 @@ public class Movement : MonoBehaviour
 
     void HandleMovementPhysics(bool isGrounded)
     {
-        // Handle Dash Physics
+        //Handle Dash Physics
         if (fighter.currentState == FighterState.Dashing)
         {
             rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
@@ -175,15 +181,16 @@ public class Movement : MonoBehaviour
             {
                 fighter.SetState(FighterState.Idle);
             }
-            return; // Skip normal movement physics while dashing
+            //Skip normal movement during a dash
+            return; 
         }
 
-        // Horizontal movement
+        //Horizontal movement
         if (isGrounded)
         {
             rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
 
-            // Only move if not attacking and not crouching
+            //Only move if not attacking and not crouching
             if (fighter.currentState != FighterState.Attacking
                 && fighter.currentState != FighterState.Crouching)
             {

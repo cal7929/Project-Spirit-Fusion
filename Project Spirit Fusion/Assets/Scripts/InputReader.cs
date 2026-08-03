@@ -2,10 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
-//Records player input every frame so that special moves and command normals can be performed,
-//aslo allows for input buffering in combos. This input is sent to the command parser to actually read
-//In the project settings this script has been set to read BEFORE Attack Controller. This is needed
-//Because Unity doesn't guarantee the order in which Update()'s resolve.
+//Records player input every frame and sends the info to other scripts for parsing. No actual actions are performed in this script just recording.
 public class InputReader : MonoBehaviour
 {
     [Header("Player Settings")]
@@ -61,7 +58,7 @@ public class InputReader : MonoBehaviour
         Vector2Int raw = ReadRawDirection();
         int direction = ToNumpadNotation(raw, fighter.facingDir);
 
-        // Map inputs based on Player ID (P1 = WASD, P2 = Arrows)
+        //Map inputs based on Player ID (1 = WASD, 2 = Arrows, may change in the future, seems rudimentary right now but it works)
         if (playerId == 1)
         {
             lastFrame = new InputFrame
@@ -122,15 +119,15 @@ public class InputReader : MonoBehaviour
         return new Vector2Int(x, y);
     }
 
-    //Converts x/y (-1, 0, 1) input into the numpad notation, mirroring x when facing
+    //Converts x/y -1/0/1 input into the numpad notation, mirroring x when facing
     //left so that forward is always the same digit regardless of side.
     int ToNumpadNotation(Vector2Int raw, float facingDir)
     {
         int x = raw.x;
         if (facingDir < 0) x = -x;
 
-        int col = x + 1;      //-1,0,1 = 0,1,2
-        int row = raw.y + 1;  //-1,0,1 = 0,1,2
+        int col = x + 1;      
+        int row = raw.y + 1;  
         return NumpadGrid[row, col];
     }
 

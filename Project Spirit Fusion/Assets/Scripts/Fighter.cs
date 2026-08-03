@@ -15,8 +15,6 @@ public enum FighterState
     Dead
 }
 
-//Once sprites are implemented, an animation FSM will need to be added here for fighter state, as well as for attacks.
-
 public class Fighter : MonoBehaviour
 {
     [Header("Stats")]
@@ -26,21 +24,16 @@ public class Fighter : MonoBehaviour
     [Header("Fighter State")]
     public FighterState currentState = FighterState.Idle;
 
-    //Tracked separately from currentState on purpose - Movement keeps this up
-    //to date every physics step regardless of what currentState is doing, so
-    //"was I crouching/jumping" survives even while currentState is Attacking.
+    //Stance and state are seperate and used for different purposes
     [Header("Attack Stance")]
     public AttackStance currentStance = AttackStance.Standing;
 
     [Header("Facing Direction")]
     public int facingDir = 1;
 
-    //Set by Movement script every frame so other systems can check airborne status.
-    //public bool isAirborne = false;
-
     private Transform opponentDir;
 
-    //Frame-based stun timers. Decremented in FixedUpdate, one tick per physics step.
+    //Frame based stun timers
     private int hitstunFrames = 0;
     private int blockstunFrames = 0;
     private int knockdownFrames = 0;
@@ -67,21 +60,27 @@ public class Fighter : MonoBehaviour
         {
             hitstunFrames--;
             if (hitstunFrames <= 0)
+            {
                 SetState(FighterState.Idle);
+            }
         }
 
         if (currentState == FighterState.Blockstun)
         {
             blockstunFrames--;
             if (blockstunFrames <= 0)
+            {
                 SetState(FighterState.Idle);
+            }
         }
 
         if (currentState == FighterState.Knockdown)
         {
             knockdownFrames--;
             if (knockdownFrames <= 0)
+            {
                 SetState(FighterState.Idle);
+            }
         }
     }
 
@@ -101,7 +100,7 @@ public class Fighter : MonoBehaviour
             return;
         }
 
-        //---If attack isn't blocked---
+        //If attack isn't blocked
 
         currentHealth -= damage;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
@@ -121,22 +120,16 @@ public class Fighter : MonoBehaviour
         rb.linearVelocity = knockback;
     }
 
-    //Checks if you are blocking: holding away from the opponent, while in a
-    //neutral standing/crouching state (not mid-attack, not already stunned,
-    //not airborne), and the attack's type is blockable from your current
-    //stance (Low only blocks crouching, Overhead only blocks standing).
+    //Checks if you are blocking: meaning you are holding away from the opponent,
+    //while in a a neutral state in the correct stance to block your opponent's attack.
     public bool IsBlocking(AttackData.AttackType attackType)
     {
         if (opponentDir == null) return false;
         if (currentStance == AttackStance.Jumping) return false;
         if (!IsNeutralState()) return false;
 
-        // Use rawX instead of Keyboard calls.
-        // If facing right (1), rawX must be negative (holding left).
-        // If facing left (-1), rawX must be positive (holding right).
-        bool holdingAway = facingDir == 1
-            ? inputReader.Latest.rawX < 0
-            : inputReader.Latest.rawX > 0;
+        //Uses input reader to determine what direction is away from your opponent
+        bool holdingAway = facingDir == 1 ? inputReader.Latest.rawX < 0 : inputReader.Latest.rawX > 0;
 
         if (!holdingAway) return false;
 
@@ -146,13 +139,13 @@ public class Fighter : MonoBehaviour
                 return currentStance == AttackStance.Crouching;
             case AttackData.AttackType.Overhead:
                 return currentStance == AttackStance.Standing;
-            default: //High
+            default: 
                 return true;
         }
     }
 
-    //Neutral = free to act and not mid-attack. Used by IsBlocking so whiffed
-    //attacks (currentState == Attacking) can't also count as blocking.
+    //Neutral means you are free to act and not mid-attack. Used by IsBlocking so whiffed
+    //attacks can't also count as blocking.
     bool IsNeutralState()
     {
         return currentState == FighterState.Idle
@@ -167,7 +160,7 @@ public class Fighter : MonoBehaviour
     }
 
     //Same pattern as SetState, but for stance. Called by Movement every
-    //physics step (see Movement.UpdateAttackStance), not by AttackController.
+    //physics step, not by AttackController.
     public void SetStance(AttackStance newStance)
     {
         currentStance = newStance;
@@ -176,7 +169,7 @@ public class Fighter : MonoBehaviour
     //Useful checking method for other scripts
     public bool CanAct()
     {
-        //Fighter CAN act if...
+        //Fighter can act if:
         return currentState != FighterState.Hitstun
             && currentState != FighterState.Blockstun
             && currentState != FighterState.Knockdown

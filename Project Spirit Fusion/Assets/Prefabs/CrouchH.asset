@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CrouchH
   m_EditorClassIdentifier: 
   attackName: Crouching Heavy
-  requiredStance: 0
+  requiredStance: 1
   strength: 2
   motionInput: 
   hitboxId: crouchH
@@ -26,3 +26,6 @@ MonoBehaviour:
   recoveryFrames: 5
   cancelWindowFrames: 5
   cancelOptions: []
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  projectileLifetime: 3

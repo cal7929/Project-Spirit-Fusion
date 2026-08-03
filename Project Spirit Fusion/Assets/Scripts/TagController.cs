@@ -1,25 +1,12 @@
 using System.Collections;
 using UnityEngine;
 
-//Owns tag-team swapping for ONE player's pair of fighters (Player 1, for
-//now). Only one fighter is ever active/enabled at a time - the other sits
-//fully deactivated at benchPoint until tagged in.
-//
-//Mirrors standard MvC-style tag: the tag button swaps control and position,
-//it's blocked while the active fighter is in hitstun/blockstun/knockdown
-//(otherwise it'd be a free, universal combo escape - the same reason
-//AttackController gates starting an attack on CanAct()), and there's a
-//short cooldown after tagging in before it can be used again.
-//
-//Lives as its own script rather than folded into a GameManager, matching
-//this project's existing pattern of single-purpose components
-//(InputReader -> CommandParser -> AttackController) - tag/roster management
-//is per-player squad logic, not match-level state like round timers.
+//Manages each player's team and allows them to tag between their active and benched fighter.
 public class TagController : MonoBehaviour
 {
-    //Cached references for one fighter slot, resolved once in Awake so
-    //Update/PerformTag don't need repeated GetComponent calls.
-    private struct FighterRig
+    //References for a fighter slot on your team, resolved once in Awake so
+    //Update/PerformTag doesn't need to repeat GetComponent calls.
+    private struct FighterSlot
     {
         public GameObject root;
         public Fighter fighter;
@@ -30,53 +17,44 @@ public class TagController : MonoBehaviour
     }
 
     [Header("Roster")]
-    [Tooltip("This player's two fighters. Each should already be a fully set up fighter (Fighter/Movement/AttackController/InputReader/CommandParser/Rigidbody2D) exactly like a normal single-fighter build.")]
     public GameObject fighter1;
     public GameObject fighter2;
 
+    //Where the deactive fighter idles until they are tagged in
     [Header("Tag Positions")]
-    [Tooltip("Where the benched fighter waits, and where the outgoing fighter exits to.")]
     public Transform benchPoint;
 
-    [Header("Timing")]
-    [Tooltip("Seconds the tag-out/tag-in slide takes.")]
     public float tagDuration = 0.35f;
 
-    [Tooltip("Extra height added mid-slide for a hop/jump feel instead of a flat slide.")]
     public float jumpArcHeight = 1.5f;
 
-    [Tooltip("Seconds after tagging in before you can tag again.")]
     public float tagCooldown = 1f;
 
-    private FighterRig[] rigs = new FighterRig[2];
+    private FighterSlot[] slots = new FighterSlot[2];
     private int activeIndex = 0;
     private bool isTagging = false;
     private float cooldownTimer = 0f;
 
-    //Whichever fighter is currently in play - what GameManager should treat
-    //as "this team's fighter" for opponent-tracking and pushbox purposes.
-    public Fighter ActiveFighter => rigs[activeIndex].fighter;
-    public Rigidbody2D ActiveRigidbody => rigs[activeIndex].rb;
+    //Whichever fighter is currently in play for GameManager's opponent and pushbox tracking.
+    public Fighter ActiveFighter => slots[activeIndex].fighter;
+    public Rigidbody2D ActiveRigidbody => slots[activeIndex].rb;
 
-    //Both fighters regardless of active/benched state - GameManager needs
-    //this once at Start to wire up opponent references and cross-team
-    //collision ignoring for whoever ISN'T active yet too.
-    public Fighter[] AllFighters => new Fighter[] { rigs[0].fighter, rigs[1].fighter };
+    public Fighter[] AllFighters => new Fighter[] { slots[0].fighter, slots[1].fighter };
 
     void Awake()
     {
-        rigs[0] = BuildRig(fighter1);
-        rigs[1] = BuildRig(fighter2);
+        slots[0] = BuildRig(fighter1);
+        slots[1] = BuildRig(fighter2);
 
         //Fighter 1 starts active and in play, Fighter 2 starts benched.
-        rigs[0].root.SetActive(true);
-        rigs[1].root.SetActive(false);
-        rigs[1].root.transform.position = benchPoint.position;
+        slots[0].root.SetActive(true);
+        slots[1].root.SetActive(false);
+        slots[1].root.transform.position = benchPoint.position;
     }
 
-    FighterRig BuildRig(GameObject root)
+    FighterSlot BuildRig(GameObject root)
     {
-        return new FighterRig
+        return new FighterSlot
         {
             root = root,
             fighter = root.GetComponent<Fighter>(),
@@ -92,17 +70,15 @@ public class TagController : MonoBehaviour
         if (cooldownTimer > 0f)
             cooldownTimer -= Time.deltaTime;
 
-        //Ignore new tag presses entirely while a swap is already in progress.
+        //No tagging while a tag is taking place
         if (isTagging) return;
 
-        FighterRig active = rigs[activeIndex];
+        FighterSlot active = slots[activeIndex];
 
         if (!active.inputReader.Latest.tagPressed) return;
         if (cooldownTimer > 0f) return;
 
-        //Industry-standard gate: can't tag out of hitstun/blockstun/
-        //knockdown, or tagging would be a free universal combo escape. Same
-        //CanAct() check AttackController already uses to gate attacks.
+        //You can only tag in neutral
         if (!active.fighter.CanAct()) return;
 
         StartCoroutine(PerformTag());
@@ -112,17 +88,16 @@ public class TagController : MonoBehaviour
     {
         isTagging = true;
 
+        //Tracks which fighter is going in and out
         int outgoingIndex = activeIndex;
         int incomingIndex = 1 - activeIndex;
-        FighterRig outgoing = rigs[outgoingIndex];
-        FighterRig incoming = rigs[incomingIndex];
+        FighterSlot outgoing = slots[outgoingIndex];
+        FighterSlot incoming = slots[incomingIndex];
 
         Vector3 tagPosition = outgoing.root.transform.position;
         Vector3 benchPosition = benchPoint.position;
 
-        //Freeze both fighters' own input-driven behaviour and physics for
-        //the slide, since position is being driven by hand here - otherwise
-        //Movement's gravity/velocity would fight this coroutine.
+        //Prevents movement during the tag
         SetControllable(outgoing, false);
         incoming.root.SetActive(true);
         SetControllable(incoming, false);
@@ -145,7 +120,7 @@ public class TagController : MonoBehaviour
         incoming.root.transform.position = tagPosition;
 
         outgoing.root.SetActive(false);
-        SetControllable(outgoing, true); //restored for next time it's tagged back in
+        SetControllable(outgoing, true); 
         SetControllable(incoming, true);
 
         activeIndex = incomingIndex;
@@ -153,10 +128,8 @@ public class TagController : MonoBehaviour
         isTagging = false;
     }
 
-    //Toggles whether a fighter responds to input/physics. InputReader is
-    //deliberately left running on both throughout - it's harmless to keep
-    //recording, and matters if buffering ever needs to carry through a tag.
-    void SetControllable(FighterRig rig, bool controllable)
+    //Sets whether or not a fighter can be controller by input
+    void SetControllable(FighterSlot rig, bool controllable)
     {
         rig.movement.enabled = controllable;
         rig.attackController.enabled = controllable;
