@@ -54,6 +54,15 @@ public class InputReader : MonoBehaviour
     {
         frameCounter++;
 
+        //If this is a dummy, log neutral input (5)
+        if (fighter.isDummy)
+        {
+            lastFrame = new InputFrame { frameNumber = frameCounter, direction = 5 };
+            buffer.Enqueue(lastFrame);
+            while (buffer.Count > bufferSize) buffer.Dequeue();
+            return;
+        }
+
         Vector2Int raw = ReadRawDirection();
         int direction = ToNumpadNotation(raw, fighter.facingDir);
 

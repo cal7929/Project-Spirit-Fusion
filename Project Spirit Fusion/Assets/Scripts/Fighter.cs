@@ -7,6 +7,7 @@ public enum FighterState
     Moving,
     Crouching,
     Jumping,
+    Dashing,
     Attacking,
     Hitstun,
     Blockstun,
@@ -24,6 +25,7 @@ public class Fighter : MonoBehaviour
 
     [Header("Fighter State")]
     public FighterState currentState = FighterState.Idle;
+    public bool isDummy = false; 
 
     //Tracked separately from currentState on purpose - Movement keeps this up
     //to date every physics step regardless of what currentState is doing, so

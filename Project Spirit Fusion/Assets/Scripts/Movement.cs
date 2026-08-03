@@ -20,6 +20,16 @@ public class Movement : MonoBehaviour
     [Header("Crouch")]
     public float crouchScaleY = 0.5f;
 
+    [Header("Dash")]
+    public float dashSpeed = 18f;
+    public float dashDuration = 0.2f;
+    public float doubleTapWindow = 0.25f; // Max seconds between taps
+
+    private float lastRightTapTime;
+    private float lastLeftTapTime;
+    private float dashTimer;
+    private int dashDirection;
+
     private float moveInput;
     private bool jumpPressed;
     private bool jumpHeld;
@@ -47,19 +57,6 @@ public class Movement : MonoBehaviour
 
     void Update()
     {
-        //Keep AttackStance fresh every rendered frame, not just each physics
-        //step - AttackController reads fighter.currentStance during its own
-        //Update() to decide which normal to fire, and this used to only get
-        //refreshed in FixedUpdate. That gap meant a crouch key pressed in
-        //the same frame as an attack button could still see the PREVIOUS
-        //physics step's stance, occasionally firing a standing move while
-        //actually crouching (or vice versa). Must run before the CanAct/
-        //Attacking early returns below, for the same reason the FixedUpdate
-        //copy does: stance has to stay correct even mid-attack.
-        //
-        //Requires Movement to run before AttackController in Script
-        //Execution Order (same reasoning as InputReader before
-        //AttackController) so this is guaranteed fresh before HandleInput().
         UpdateAttackStance(grounded);
 
         if (!fighter.CanAct()) return;
@@ -70,11 +67,14 @@ public class Movement : MonoBehaviour
             return;
         }
 
-        HandleGroundedInput();
-        HandleJumpInput();
+        if (!fighter.isDummy)
+        {
+            HandleGroundedInput();
+            HandleJumpInput();
+        }
 
         //Update the crouch hitbox whenever the state changes.
-        UpdateCrouchScale();
+        HandleCrouching();
     }
 
     void FixedUpdate()
@@ -114,6 +114,9 @@ public class Movement : MonoBehaviour
     {
         if (!grounded) return;
 
+        // Don't read normal movement inputs if we are already dashing
+        if (fighter.currentState == FighterState.Dashing) return;
+
         if (Keyboard.current.sKey.isPressed)
         {
             moveInput = 0f;
@@ -125,6 +128,26 @@ public class Movement : MonoBehaviour
                 fighter.SetState(FighterState.Idle);
 
             moveInput = 0f;
+
+            // --- DASH CHECK LOGIC ---
+            if (Keyboard.current.aKey.wasPressedThisFrame)
+            {
+                if (Time.time - lastLeftTapTime <= doubleTapWindow)
+                    StartDash(-1); // Dash Left
+
+                lastLeftTapTime = Time.time;
+            }
+
+            if (Keyboard.current.dKey.wasPressedThisFrame)
+            {
+                if (Time.time - lastRightTapTime <= doubleTapWindow)
+                    StartDash(1); // Dash Right
+
+                lastRightTapTime = Time.time;
+            }
+            // ------------------------
+
+            // Normal movement
             if (Keyboard.current.aKey.isPressed)
             {
                 moveInput = -1f;
@@ -150,12 +173,25 @@ public class Movement : MonoBehaviour
 
     void HandleMovementPhysics(bool isGrounded)
     {
-        //Horizontal movement
+        // Handle Dash Physics
+        if (fighter.currentState == FighterState.Dashing)
+        {
+            rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
+
+            dashTimer -= Time.fixedDeltaTime;
+            if (dashTimer <= 0f)
+            {
+                fighter.SetState(FighterState.Idle);
+            }
+            return; // Skip normal movement physics while dashing
+        }
+
+        // Horizontal movement
         if (isGrounded)
         {
             rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
 
-            //Only move if not attacking
+            // Only move if not attacking and not crouching
             if (fighter.currentState != FighterState.Attacking
                 && fighter.currentState != FighterState.Crouching)
             {
@@ -204,7 +240,7 @@ public class Movement : MonoBehaviour
 
     //Scales the fighter cube down when crouching and back to normal when crouch is released.
     //This method is used for the player's hitbox, the sprite animation will be in a different state machine
-    void UpdateCrouchScale()
+    void HandleCrouching()
     {
         bool shouldCrouch = fighter.currentState == FighterState.Crouching;
 
@@ -234,5 +270,12 @@ public class Movement : MonoBehaviour
         Vector2 origin = new Vector2(col.bounds.center.x, col.bounds.min.y);
         RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, groundCheckDistance, groundLayer);
         return hit.collider != null;
+    }
+
+    void StartDash(int direction)
+    {
+        fighter.SetState(FighterState.Dashing);
+        dashDirection = direction;
+        dashTimer = dashDuration;
     }
 }

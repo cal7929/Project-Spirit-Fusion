@@ -30,33 +30,33 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        //Every fighter on both teams needs an opponent reference before it's
-        //ever tagged in - not just whichever one starts active. Wired here
-        //rather than inside TagController since cross-team pairing is
-        //GameManager's job, not something one team should know about the
-        //other on its own.
         foreach (Fighter fighter in player1Team.AllFighters)
             fighter.SetOpponent(player2Team.ActiveFighter.transform);
 
         foreach (Fighter fighter in player2Team.AllFighters)
             fighter.SetOpponent(player1Team.ActiveFighter.transform);
-
-        //No fighter should ever physically collide with anyone on the other
-        //team - including whichever one is currently benched, since both
-        //team members are briefly active at once during a tag slide.
-        foreach (Fighter a in player1Team.AllFighters)
-            foreach (Fighter b in player2Team.AllFighters)
-                IgnoreCollisionBetween(a, b);
     }
 
     void Update()
     {
-        //Opponent tracking has to stay live, not a one-time Start()
-        //assignment - either team can tag mid-fight, and whoever's active
-        //needs to always be facing/blocking against whoever the OTHER team
-        //currently has in play, not whoever happened to be active at Start().
+        // Opponent tracking has to stay live
         player1Team.ActiveFighter.SetOpponent(player2Team.ActiveFighter.transform);
         player2Team.ActiveFighter.SetOpponent(player1Team.ActiveFighter.transform);
+
+        // Unity deletes Physics2D.IgnoreCollision rules when a GameObject is deactivated.
+        // Continuously applying it here ensures fighters immediately regain their 
+        // pushbox logic the instant they are tagged back in.
+        foreach (Fighter a in player1Team.AllFighters)
+        {
+            foreach (Fighter b in player2Team.AllFighters)
+            {
+                // Only apply if both are currently active so Unity doesn't throw warnings
+                if (a.gameObject.activeInHierarchy && b.gameObject.activeInHierarchy)
+                {
+                    IgnoreCollisionBetween(a, b);
+                }
+            }
+        }
     }
 
     void FixedUpdate()
