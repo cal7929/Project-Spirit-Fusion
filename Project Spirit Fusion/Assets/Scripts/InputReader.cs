@@ -8,18 +8,22 @@ using System.Collections.Generic;
 //Because Unity doesn't guarantee the order in which Update()'s resolve.
 public class InputReader : MonoBehaviour
 {
-    //Struct for keeping track of what buttons were pressed each individual frame
+    [Header("Player Settings")]
+    public int playerId;
+
     public struct InputFrame
     {
         public int frameNumber;
         public int direction;
+        public float rawX; 
+        public bool isCrouchHeld; 
+        public bool isJumpPressed; 
+        public bool isJumpHeld; 
+
         public bool lightPressed;
         public bool mediumPressed;
         public bool heavyPressed;
         public bool tagPressed;
-
-        //Future inputs
-        //specialtagPressed
     }
 
     [Tooltip("How many frames of history to keep. At 60fps, 30 = half a second.")]
@@ -54,27 +58,42 @@ public class InputReader : MonoBehaviour
     {
         frameCounter++;
 
-        //If this is a dummy, log neutral input (5)
-        if (fighter.isDummy)
-        {
-            lastFrame = new InputFrame { frameNumber = frameCounter, direction = 5 };
-            buffer.Enqueue(lastFrame);
-            while (buffer.Count > bufferSize) buffer.Dequeue();
-            return;
-        }
-
         Vector2Int raw = ReadRawDirection();
         int direction = ToNumpadNotation(raw, fighter.facingDir);
 
-        lastFrame = new InputFrame
+        // Map inputs based on Player ID (P1 = WASD, P2 = Arrows)
+        if (playerId == 1)
         {
-            frameNumber = frameCounter,
-            direction = direction,
-            lightPressed = Keyboard.current.jKey.wasPressedThisFrame,
-            mediumPressed = Keyboard.current.kKey.wasPressedThisFrame,
-            heavyPressed = Keyboard.current.lKey.wasPressedThisFrame,
-            tagPressed = Keyboard.current.uKey.wasPressedThisFrame
-        };
+            lastFrame = new InputFrame
+            {
+                frameNumber = frameCounter,
+                direction = direction,
+                rawX = raw.x,
+                isCrouchHeld = Keyboard.current.sKey.isPressed,
+                isJumpPressed = Keyboard.current.wKey.wasPressedThisFrame,
+                isJumpHeld = Keyboard.current.wKey.isPressed,
+                lightPressed = Keyboard.current.jKey.wasPressedThisFrame,
+                mediumPressed = Keyboard.current.kKey.wasPressedThisFrame,
+                heavyPressed = Keyboard.current.lKey.wasPressedThisFrame,
+                tagPressed = Keyboard.current.uKey.wasPressedThisFrame
+            };
+        }
+        else if (playerId == 2)
+        {
+            lastFrame = new InputFrame
+            {
+                frameNumber = frameCounter,
+                direction = direction,
+                rawX = raw.x,
+                isCrouchHeld = Keyboard.current.downArrowKey.isPressed,
+                isJumpPressed = Keyboard.current.upArrowKey.wasPressedThisFrame,
+                isJumpHeld = Keyboard.current.upArrowKey.isPressed,
+                lightPressed = Keyboard.current.numpad1Key.wasPressedThisFrame,
+                mediumPressed = Keyboard.current.numpad2Key.wasPressedThisFrame,
+                heavyPressed = Keyboard.current.numpad3Key.wasPressedThisFrame,
+                tagPressed = Keyboard.current.numpad0Key.wasPressedThisFrame
+            };
+        }
 
         buffer.Enqueue(lastFrame);
         while (buffer.Count > bufferSize)
@@ -86,10 +105,20 @@ public class InputReader : MonoBehaviour
     Vector2Int ReadRawDirection()
     {
         int x = 0, y = 0;
-        if (Keyboard.current.aKey.isPressed) x -= 1;
-        if (Keyboard.current.dKey.isPressed) x += 1;
-        if (Keyboard.current.sKey.isPressed) y -= 1;
-        if (Keyboard.current.wKey.isPressed) y += 1;
+        if (playerId == 1)
+        {
+            if (Keyboard.current.aKey.isPressed) x -= 1;
+            if (Keyboard.current.dKey.isPressed) x += 1;
+            if (Keyboard.current.sKey.isPressed) y -= 1;
+            if (Keyboard.current.wKey.isPressed) y += 1;
+        }
+        else if (playerId == 2)
+        {
+            if (Keyboard.current.leftArrowKey.isPressed) x -= 1;
+            if (Keyboard.current.rightArrowKey.isPressed) x += 1;
+            if (Keyboard.current.downArrowKey.isPressed) y -= 1;
+            if (Keyboard.current.upArrowKey.isPressed) y += 1;
+        }
         return new Vector2Int(x, y);
     }
 

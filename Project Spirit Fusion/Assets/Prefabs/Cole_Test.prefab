@@ -635,6 +635,7 @@ MonoBehaviour:
   maxHealth: 1000
   currentHealth: 0
   currentState: 0
+  isDummy: 0
   currentStance: 0
   facingDir: 1
 --- !u!114 &3820498304269376295
@@ -659,6 +660,9 @@ MonoBehaviour:
     m_Bits: 8
   groundCheckDistance: 0.1
   crouchScaleY: 0.5
+  dashSpeed: 12
+  dashDuration: 0.2
+  doubleTapWindow: 0.25
 --- !u!114 &6015607568074904223
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -740,7 +744,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc0fce29fd443a94087a4dd1dc080957, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bufferSize: 20
+  playerId: 0
+  bufferSize: 30
 --- !u!114 &8189761818025349434
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -755,7 +760,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   specialMoves:
   - {fileID: 11400000, guid: e8a72e58848f6a2489205792dd3327ec, type: 2}
-  searchWindow: 20
+  searchWindow: 30
 --- !u!1 &2888036593814537798
 GameObject:
   m_ObjectHideFlags: 0

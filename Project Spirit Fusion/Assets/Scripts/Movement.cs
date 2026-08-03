@@ -29,6 +29,7 @@ public class Movement : MonoBehaviour
     private float lastLeftTapTime;
     private float dashTimer;
     private int dashDirection;
+    private float lastRawX = 0f;
 
     private float moveInput;
     private bool jumpPressed;
@@ -44,6 +45,8 @@ public class Movement : MonoBehaviour
     private Collider2D col;
     private Fighter fighter;
 
+    private InputReader inputReader; 
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -51,6 +54,7 @@ public class Movement : MonoBehaviour
         rb.gravityScale = gravityScale;
         rb.linearDamping = 0f;
         fighter = GetComponent<Fighter>();
+        inputReader = GetComponent<InputReader>();
 
         standingScale = transform.localScale;
     }
@@ -67,11 +71,8 @@ public class Movement : MonoBehaviour
             return;
         }
 
-        if (!fighter.isDummy)
-        {
-            HandleGroundedInput();
-            HandleJumpInput();
-        }
+        HandleGroundedInput();
+        HandleJumpInput();
 
         //Update the crouch hitbox whenever the state changes.
         HandleCrouching();
@@ -97,17 +98,11 @@ public class Movement : MonoBehaviour
     void UpdateAttackStance(bool isGrounded)
     {
         if (!isGrounded)
-        {
             fighter.SetStance(AttackStance.Jumping);
-        }
-        else if (Keyboard.current.sKey.isPressed)
-        {
+        else if (inputReader.Latest.isCrouchHeld) // Swapped from sKey
             fighter.SetStance(AttackStance.Crouching);
-        }
         else
-        {
             fighter.SetStance(AttackStance.Standing);
-        }
     }
 
     void HandleGroundedInput()
@@ -117,7 +112,7 @@ public class Movement : MonoBehaviour
         // Don't read normal movement inputs if we are already dashing
         if (fighter.currentState == FighterState.Dashing) return;
 
-        if (Keyboard.current.sKey.isPressed)
+        if (inputReader.Latest.isCrouchHeld)
         {
             moveInput = 0f;
             fighter.SetState(FighterState.Crouching);
@@ -129,46 +124,43 @@ public class Movement : MonoBehaviour
 
             moveInput = 0f;
 
-            // --- DASH CHECK LOGIC ---
-            if (Keyboard.current.aKey.wasPressedThisFrame)
-            {
-                if (Time.time - lastLeftTapTime <= doubleTapWindow)
-                    StartDash(-1); // Dash Left
+            float currentRawX = inputReader.Latest.rawX;
 
-                lastLeftTapTime = Time.time;
+            // Detect a fresh tap to the left (-1) or right (1)
+            if (currentRawX != 0f && lastRawX == 0f)
+            {
+                if (currentRawX < 0f)
+                {
+                    if (Time.time - lastLeftTapTime <= doubleTapWindow)
+                        StartDash(-1); // Dash Left
+
+                    lastLeftTapTime = Time.time;
+                }
+                else if (currentRawX > 0f)
+                {
+                    if (Time.time - lastRightTapTime <= doubleTapWindow)
+                        StartDash(1); // Dash Right
+
+                    lastRightTapTime = Time.time;
+                }
             }
 
-            if (Keyboard.current.dKey.wasPressedThisFrame)
-            {
-                if (Time.time - lastRightTapTime <= doubleTapWindow)
-                    StartDash(1); // Dash Right
-
-                lastRightTapTime = Time.time;
-            }
-            // ------------------------
+            lastRawX = currentRawX;
 
             // Normal movement
-            if (Keyboard.current.aKey.isPressed)
-            {
-                moveInput = -1f;
-            }
-            else if (Keyboard.current.dKey.isPressed)
-            {
-                moveInput = 1f;
-            }
+            moveInput = currentRawX;
         }
     }
 
     void HandleJumpInput()
     {
-        //No jumping while crouching, and no queuing a second jump while
-        //already airborne.
-        if (Keyboard.current.wKey.wasPressedThisFrame && fighter.currentState != FighterState.Crouching && grounded)
+        // Swapped from wKey checks
+        if (inputReader.Latest.isJumpPressed && fighter.currentState != FighterState.Crouching && grounded)
         {
             jumpPressed = true;
             fighter.SetState(FighterState.Jumping);
         }
-        jumpHeld = Keyboard.current.wKey.isPressed;
+        jumpHeld = inputReader.Latest.isJumpHeld;
     }
 
     void HandleMovementPhysics(bool isGrounded)

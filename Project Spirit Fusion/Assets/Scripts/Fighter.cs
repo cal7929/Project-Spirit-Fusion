@@ -25,7 +25,6 @@ public class Fighter : MonoBehaviour
 
     [Header("Fighter State")]
     public FighterState currentState = FighterState.Idle;
-    public bool isDummy = false; 
 
     //Tracked separately from currentState on purpose - Movement keeps this up
     //to date every physics step regardless of what currentState is doing, so
@@ -48,10 +47,13 @@ public class Fighter : MonoBehaviour
 
     private Rigidbody2D rb;
 
+    private InputReader inputReader;
+
     void Start()
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody2D>();
+        inputReader = GetComponent<InputReader>(); 
     }
 
     void Update()
@@ -126,15 +128,15 @@ public class Fighter : MonoBehaviour
     public bool IsBlocking(AttackData.AttackType attackType)
     {
         if (opponentDir == null) return false;
-
-        //Can't block in the air, and can't block while already doing
-        //something else (attacking, in hitstun/blockstun/knockdown, dead).
         if (currentStance == AttackStance.Jumping) return false;
         if (!IsNeutralState()) return false;
 
+        // Use rawX instead of Keyboard calls.
+        // If facing right (1), rawX must be negative (holding left).
+        // If facing left (-1), rawX must be positive (holding right).
         bool holdingAway = facingDir == 1
-            ? Keyboard.current.aKey.isPressed
-            : Keyboard.current.dKey.isPressed;
+            ? inputReader.Latest.rawX < 0
+            : inputReader.Latest.rawX > 0;
 
         if (!holdingAway) return false;
 
