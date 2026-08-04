@@ -21,10 +21,10 @@ MonoBehaviour:
   hitstunFrames: 5
   hitKnockback: 3
   type: 0
-  startupFrames: 8
-  activeFrames: 6
-  recoveryFrames: 5
-  cancelWindowFrames: 5
+  startupFrames: 4
+  activeFrames: 3
+  recoveryFrames: 2
+  cancelWindowFrames: 2
   cancelOptions: []
   projectilePrefab: {fileID: 8431732719491087788, guid: ad97200eaae6feb4eaf0baa579d8d60a, type: 3}
   projectileSpeed: 10

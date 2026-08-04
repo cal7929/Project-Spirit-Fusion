@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class Movement : MonoBehaviour
 {
@@ -75,7 +74,6 @@ public class Movement : MonoBehaviour
         HandleGroundedInput();
         HandleJumpInput();
 
-        //Update the crouch hitbox whenever the state changes.
         HandleCrouching();
     }
 

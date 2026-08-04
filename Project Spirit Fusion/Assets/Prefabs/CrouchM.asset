@@ -23,7 +23,7 @@ MonoBehaviour:
   type: 1
   startupFrames: 5
   activeFrames: 3
-  recoveryFrames: 3
+  recoveryFrames: 2
   cancelWindowFrames: 2
   cancelOptions:
   - {fileID: 11400000, guid: eea0374869fc62849acbfbd821e2f866, type: 2}
