@@ -22,7 +22,7 @@ public class Movement : MonoBehaviour
     [Header("Dash")]
     public float dashSpeed = 18f;
     public float dashDuration = 0.2f;
-    public float doubleTapWindow = 0.25f; 
+    public float doubleTapWindow = 0.25f;
 
     //To track when the taps were pressed to avoid false dashing
     private float lastRightTapTime;
@@ -45,7 +45,7 @@ public class Movement : MonoBehaviour
     private Collider2D col;
     private Fighter fighter;
 
-    private InputReader inputReader; 
+    private InputReader inputReader;
 
     void Start()
     {
@@ -63,6 +63,8 @@ public class Movement : MonoBehaviour
     {
         UpdateAttackStance(grounded);
 
+        HandleCrouching();
+
         if (!fighter.CanAct()) return;
 
         if (fighter.currentState == FighterState.Attacking)
@@ -73,8 +75,6 @@ public class Movement : MonoBehaviour
 
         HandleGroundedInput();
         HandleJumpInput();
-
-        HandleCrouching();
     }
 
     void FixedUpdate()
@@ -117,49 +117,44 @@ public class Movement : MonoBehaviour
         //Can't move during the dash
         if (fighter.currentState == FighterState.Dashing) return;
 
-        if (inputReader.Latest.isCrouchHeld)
+        if (fighter.currentStance == AttackStance.Crouching)
         {
             moveInput = 0f;
-            fighter.SetState(FighterState.Crouching);
+            return;
         }
-        else
+
+        moveInput = 0f;
+
+        float currentRawX = inputReader.Latest.rawX;
+
+        //Detect a fresh tap back or forwad
+        if (currentRawX != 0f && lastRawX == 0f)
         {
-            if (fighter.currentState == FighterState.Crouching)
-                fighter.SetState(FighterState.Idle);
-
-            moveInput = 0f;
-
-            float currentRawX = inputReader.Latest.rawX;
-
-            //Detect a fresh tap back or forwad
-            if (currentRawX != 0f && lastRawX == 0f)
+            if (currentRawX < 0f)
             {
-                if (currentRawX < 0f)
-                {
-                    if (Time.time - lastLeftTapTime <= doubleTapWindow)
-                        StartDash(-1); // Dash Left
+                if (Time.time - lastLeftTapTime <= doubleTapWindow)
+                    StartDash(-1); // Dash Left
 
-                    lastLeftTapTime = Time.time;
-                }
-                else if (currentRawX > 0f)
-                {
-                    if (Time.time - lastRightTapTime <= doubleTapWindow)
-                        StartDash(1); // Dash Right
-
-                    lastRightTapTime = Time.time;
-                }
+                lastLeftTapTime = Time.time;
             }
+            else if (currentRawX > 0f)
+            {
+                if (Time.time - lastRightTapTime <= doubleTapWindow)
+                    StartDash(1); // Dash Right
 
-            lastRawX = currentRawX;
-
-            //Normal movement
-            moveInput = currentRawX;
+                lastRightTapTime = Time.time;
+            }
         }
+
+        lastRawX = currentRawX;
+
+        //Normal movement
+        moveInput = currentRawX;
     }
 
     void HandleJumpInput()
     {
-        if (inputReader.Latest.isJumpPressed && fighter.currentState != FighterState.Crouching && grounded)
+        if (inputReader.Latest.isJumpPressed && fighter.currentStance != AttackStance.Crouching && grounded)
         {
             jumpPressed = true;
             fighter.SetState(FighterState.Jumping);
@@ -180,7 +175,7 @@ public class Movement : MonoBehaviour
                 fighter.SetState(FighterState.Idle);
             }
             //Skip normal movement during a dash
-            return; 
+            return;
         }
 
         //Horizontal movement
@@ -190,7 +185,7 @@ public class Movement : MonoBehaviour
 
             //Only move if not attacking and not crouching
             if (fighter.currentState != FighterState.Attacking
-                && fighter.currentState != FighterState.Crouching)
+                && fighter.currentStance != AttackStance.Crouching)
             {
                 if (moveInput != 0f)
                 {
@@ -239,7 +234,7 @@ public class Movement : MonoBehaviour
     //This method is used for the player's hitbox, the sprite animation will be in a different state machine
     void HandleCrouching()
     {
-        bool shouldCrouch = fighter.currentState == FighterState.Crouching;
+        bool shouldCrouch = fighter.currentStance == AttackStance.Crouching;
 
         //Nothing changed, nothing to do.
         if (shouldCrouch == isCrouching) return;

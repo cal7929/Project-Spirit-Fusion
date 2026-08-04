@@ -12,10 +12,10 @@ public class InputReader : MonoBehaviour
     {
         public int frameNumber;
         public int direction;
-        public float rawX; 
-        public bool isCrouchHeld; 
-        public bool isJumpPressed; 
-        public bool isJumpHeld; 
+        public float rawX;
+        public bool isCrouchHeld;
+        public bool isJumpPressed;
+        public bool isJumpHeld;
 
         public bool lightPressed;
         public bool mediumPressed;
@@ -91,6 +91,16 @@ public class InputReader : MonoBehaviour
                 tagPressed = Keyboard.current.numpad0Key.wasPressedThisFrame
             };
         }
+        else
+        {
+            //playerId isn't 1 or 2 - report a clean neutral frame (nothing
+            //pressed, neutral direction) instead of silently leaving
+            //lastFrame frozen at whatever it happened to be last. This is
+            //also the mechanism for an inert/benched fighter: set playerId
+            //to 0 (or anything outside 1/2) and it just reports nothing,
+            //every frame, on purpose.
+            lastFrame = new InputFrame { frameNumber = frameCounter, direction = 5 };
+        }
 
         buffer.Enqueue(lastFrame);
         while (buffer.Count > bufferSize)
@@ -126,13 +136,22 @@ public class InputReader : MonoBehaviour
         int x = raw.x;
         if (facingDir < 0) x = -x;
 
-        int col = x + 1;      
-        int row = raw.y + 1;  
+        int col = x + 1;
+        int row = raw.y + 1;
         return NumpadGrid[row, col];
     }
 
     //Most recent recorded frame. 
     public InputFrame Latest => lastFrame;
+
+    //True for numpad directions 1/4/7 - i.e. "back," regardless of up/down.
+    //direction is already facing-mirrored (see ToNumpadNotation), so this is
+    //the single place "holding away from the opponent" is defined, instead
+    //of each caller re-deriving it from rawX/facingDir independently.
+    public static bool IsBackward(int direction)
+    {
+        return direction == 1 || direction == 4 || direction == 7;
+    }
 
     //Returns up to the count of the most recent frames, oldest first. Used by
     //CommandParser to scan for motion patterns.
