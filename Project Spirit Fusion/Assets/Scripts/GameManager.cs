@@ -91,10 +91,18 @@ public class GameManager : MonoBehaviour
 
     void IgnoreCollisionBetween(Fighter a, Fighter b)
     {
-        Collider2D colA = a.GetComponent<Collider2D>();
-        Collider2D colB = b.GetComponent<Collider2D>();
+        Collider2D[] collidersA = a.GetComponentsInChildren<Collider2D>();
+        Collider2D[] collidersB = b.GetComponentsInChildren<Collider2D>();
 
-        if (colA != null && colB != null)
-            Physics2D.IgnoreCollision(colA, colB);
+        foreach (Collider2D colA in collidersA)
+        {
+            if (colA.isTrigger) continue;
+
+            foreach (Collider2D colB in collidersB)
+            {
+                if (colB.isTrigger) continue;
+                Physics2D.IgnoreCollision(colA, colB);
+            }
+        }
     }
 }

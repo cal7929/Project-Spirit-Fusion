@@ -4,8 +4,8 @@ public enum FighterState
 {
     Idle,
     Moving,
-    Crouching,
     Jumping,
+    Coruching,
     Dashing,
     Attacking,
     Hitstun,
@@ -45,7 +45,7 @@ public class Fighter : MonoBehaviour
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody2D>();
-        inputReader = GetComponent<InputReader>(); 
+        inputReader = GetComponent<InputReader>();
     }
 
     void Update()
@@ -127,8 +127,8 @@ public class Fighter : MonoBehaviour
         if (currentStance == AttackStance.Jumping) return false;
         if (!IsNeutralState()) return false;
 
-        //Uses input reader to determine what direction is away from your opponent
-        bool holdingAway = facingDir == 1 ? inputReader.Latest.rawX < 0 : inputReader.Latest.rawX > 0;
+        //Backward always means away from the opponent regardless of which side you're on.
+        bool holdingAway = InputReader.IsBackward(inputReader.Latest.direction);
 
         if (!holdingAway) return false;
 
@@ -138,18 +138,16 @@ public class Fighter : MonoBehaviour
                 return currentStance == AttackStance.Crouching;
             case AttackData.AttackType.Overhead:
                 return currentStance == AttackStance.Standing;
-            default: 
+            default:
                 return true;
         }
     }
 
-    //Neutral means you are free to act and not mid-attack. Used by IsBlocking so whiffed
-    //attacks can't also count as blocking.
+    //Neutral means you are free to act and not mid-attack. 
     bool IsNeutralState()
     {
         return currentState == FighterState.Idle
-            || currentState == FighterState.Moving
-            || currentState == FighterState.Crouching;
+            || currentState == FighterState.Moving;
     }
 
     //Only method that can change state to prevent accidental changes.
@@ -163,6 +161,27 @@ public class Fighter : MonoBehaviour
     public void SetStance(AttackStance newStance)
     {
         currentStance = newStance;
+    }
+
+    private AttackStance? lockedStance = null;
+
+    //Handles effective stance so that you don't stand up mid crouch attack or crouch mid stand attack
+    //(will likely not be needed once things are based on animations instead.)
+    public AttackStance EffectiveStance => lockedStance ?? currentStance;
+
+    //Called by AttackController when an attack starts, locking
+    //EffectiveStance to that attack's own requiredStance for its whole
+    //duration.
+    public void LockStance(AttackStance stance)
+    {
+        lockedStance = stance;
+    }
+
+    //Called by AttackController when an attack ends without being replaced
+    //by a new one, releasing EffectiveStance back to tracking live input.
+    public void UnlockStance()
+    {
+        lockedStance = null;
     }
 
     //Useful checking method for other scripts

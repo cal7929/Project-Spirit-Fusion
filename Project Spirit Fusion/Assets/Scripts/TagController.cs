@@ -68,7 +68,9 @@ public class TagController : MonoBehaviour
     void Update()
     {
         if (cooldownTimer > 0f)
+        {
             cooldownTimer -= Time.deltaTime;
+        }
 
         //No tagging while a tag is taking place
         if (isTagging) return;
@@ -79,7 +81,7 @@ public class TagController : MonoBehaviour
         if (cooldownTimer > 0f) return;
 
         //You can only tag in neutral
-        if (!active.fighter.CanAct()) return;
+        if (!active.fighter.CanAct() || active.fighter.currentStance != AttackStance.Standing) return;
 
         StartCoroutine(PerformTag());
     }

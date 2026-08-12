@@ -15,6 +15,11 @@ public class Movement : MonoBehaviour
     public LayerMask groundLayer;
     public float groundCheckDistance = 0.1f;
 
+    [Header("Body")]
+    public Transform bodyRoot;
+    [Tooltip("The fighter's main hurtbox collider, used for ground-detection raycasting.")]
+    public Collider2D bodyCollider;
+
     //Amount to reduce hitbox by when crouching
     [Header("Crouch")]
     public float crouchScaleY = 0.5f;
@@ -50,19 +55,21 @@ public class Movement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        col = GetComponent<Collider2D>();
         rb.gravityScale = gravityScale;
         rb.linearDamping = 0f;
         fighter = GetComponent<Fighter>();
         inputReader = GetComponent<InputReader>();
+        col = bodyCollider;
 
-        standingScale = transform.localScale;
+        standingScale = bodyRoot != null ? bodyRoot.localScale : transform.localScale;
     }
 
     void Update()
     {
         UpdateAttackStance(grounded);
 
+        //Runs unconditionally since attacks can be performed while crouching,
+        //and crouch can be held or released during an attack.
         HandleCrouching();
 
         if (!fighter.CanAct()) return;
@@ -117,6 +124,7 @@ public class Movement : MonoBehaviour
         //Can't move during the dash
         if (fighter.currentState == FighterState.Dashing) return;
 
+        //Crouching posture is tracked via currentStance 
         if (fighter.currentStance == AttackStance.Crouching)
         {
             moveInput = 0f;
@@ -154,7 +162,7 @@ public class Movement : MonoBehaviour
 
     void HandleJumpInput()
     {
-        if (inputReader.Latest.isJumpPressed && fighter.currentStance != AttackStance.Crouching && grounded)
+        if (inputReader.Latest.isJumpPressed && fighter.EffectiveStance != AttackStance.Crouching && grounded)
         {
             jumpPressed = true;
             fighter.SetState(FighterState.Jumping);
@@ -185,7 +193,7 @@ public class Movement : MonoBehaviour
 
             //Only move if not attacking and not crouching
             if (fighter.currentState != FighterState.Attacking
-                && fighter.currentStance != AttackStance.Crouching)
+                && fighter.EffectiveStance != AttackStance.Crouching)
             {
                 if (moveInput != 0f)
                 {
@@ -230,17 +238,14 @@ public class Movement : MonoBehaviour
         }
     }
 
-    //Scales the fighter cube down when crouching and back to normal when crouch is released.
-    //This method is used for the player's hitbox, the sprite animation will be in a different state machine
     void HandleCrouching()
     {
-        bool shouldCrouch = fighter.currentStance == AttackStance.Crouching;
+        if (bodyRoot == null) return;
 
-        //Nothing changed, nothing to do.
+        bool shouldCrouch = fighter.EffectiveStance == AttackStance.Crouching;
+
         if (shouldCrouch == isCrouching) return;
 
-        //Preserve the current X sign so facing direction isn't lost.
-        float xSign = Mathf.Sign(transform.localScale.x);
         float crouchY = standingScale.y * crouchScaleY;
         //Shift by this much so feet stay planted since unity scales from center.
         float heightDiff = (standingScale.y - crouchY) * 0.5f;
@@ -248,8 +253,12 @@ public class Movement : MonoBehaviour
         float targetY = shouldCrouch ? crouchY : standingScale.y;
         float positionDelta = shouldCrouch ? -heightDiff : heightDiff;
 
-        transform.localScale = new Vector3(standingScale.x * xSign, targetY, standingScale.z);
-        transform.position += new Vector3(0f, positionDelta, 0f);
+        Vector3 scale = bodyRoot.localScale;
+        scale.y = targetY;
+        bodyRoot.localScale = scale;
+
+        //localPosition, not the root's world position
+        bodyRoot.localPosition += new Vector3(0f, positionDelta, 0f);
 
         isCrouching = shouldCrouch;
     }

@@ -93,12 +93,7 @@ public class InputReader : MonoBehaviour
         }
         else
         {
-            //playerId isn't 1 or 2 - report a clean neutral frame (nothing
-            //pressed, neutral direction) instead of silently leaving
-            //lastFrame frozen at whatever it happened to be last. This is
-            //also the mechanism for an inert/benched fighter: set playerId
-            //to 0 (or anything outside 1/2) and it just reports nothing,
-            //every frame, on purpose.
+            //read neutral (5) when the fighter isn't controlled by anyone
             lastFrame = new InputFrame { frameNumber = frameCounter, direction = 5 };
         }
 
@@ -144,10 +139,6 @@ public class InputReader : MonoBehaviour
     //Most recent recorded frame. 
     public InputFrame Latest => lastFrame;
 
-    //True for numpad directions 1/4/7 - i.e. "back," regardless of up/down.
-    //direction is already facing-mirrored (see ToNumpadNotation), so this is
-    //the single place "holding away from the opponent" is defined, instead
-    //of each caller re-deriving it from rawX/facingDir independently.
     public static bool IsBackward(int direction)
     {
         return direction == 1 || direction == 4 || direction == 7;

@@ -168,6 +168,8 @@ public class AttackController : MonoBehaviour
         attackFrame = 0;
 
         fighter.SetState(FighterState.Attacking);
+
+        fighter.LockStance(data.requiredStance);
     }
 
     //Returns true if this move is a projectile-type special and its previous
@@ -237,7 +239,7 @@ public class AttackController : MonoBehaviour
     {
         if (data.projectilePrefab == null)
         {
-            Debug.LogWarning($"{data.attackName}: IsProjectile is true but no projectilePrefab is assigned. Nothing will spawn.", this);
+            Debug.LogWarning($"{data.attackName}: IsProjectile is true but no projectilePrefab is assigned.", this);
             return;
         }
 
@@ -251,7 +253,7 @@ public class AttackController : MonoBehaviour
         Projectile projectile = instance.GetComponent<Projectile>();
         if (projectile == null)
         {
-            Debug.LogWarning($"{data.attackName}: projectilePrefab has no Projectile component - it will spawn but never move or activate its Hitbox.", instance);
+            Debug.LogWarning($"{data.attackName}: projectilePrefab has no Projectile component.", instance);
             return;
         }
 
@@ -273,6 +275,9 @@ public class AttackController : MonoBehaviour
         currentAttack = null;
         currentHitbox = null;
         attackFrame = 0;
+
+        //Releases EffectiveStance back to tracking live input. 
+        fighter.UnlockStance();
 
         if (fighter.currentState == FighterState.Attacking)
             fighter.SetState(FighterState.Idle);
