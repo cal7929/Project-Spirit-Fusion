@@ -27,7 +27,7 @@ public class Movement : MonoBehaviour
     public float dashDuration = 0.2f;
     public float doubleTapWindow = 0.25f;
 
-    //To track when the taps were pressed to avoid false dashing
+    // To track when the taps were pressed to avoid false dashing
     private float lastRightTapTime;
     private float lastLeftTapTime;
     private float dashTimer;
@@ -39,7 +39,7 @@ public class Movement : MonoBehaviour
     private bool jumpHeld;
     private bool isCrouching = false;
 
-    //Saved once per physics step so Update() and FixedUpdate() don't each fire their own raycast.
+    // Saved once per physics step so Update() and FixedUpdate() don't each fire their own raycast.
     private bool grounded;
 
     private Collider2D standingCollider;
@@ -48,16 +48,23 @@ public class Movement : MonoBehaviour
     private Rigidbody2D rb;
     private Collider2D col;
     private Fighter fighter;
-
     private InputReader inputReader;
+
+    // ANIMATION
+    private Animator animator;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = gravityScale;
         rb.linearDamping = 0f;
+
         fighter = GetComponent<Fighter>();
         inputReader = GetComponent<InputReader>();
+
+        // ANIMATION
+        // Animator is on Cole, not Visual.
+        animator = GetComponent<Animator>();
 
         if (standingBody == null || crouchingBody == null)
         {
@@ -65,25 +72,19 @@ public class Movement : MonoBehaviour
         }
         else
         {
-            //GetComponentInChildren instead of GetComponent, so this still
-            //works if the Collider2D ends up one level deeper (e.g. on a
-            //sprite child) rather than directly on standingBody/crouchingBody.
+            // GetComponentInChildren instead of GetComponent, so this still
+            // works if the Collider2D ends up one level deeper.
             standingCollider = standingBody.GetComponentInChildren<Collider2D>();
             crouchingCollider = crouchingBody.GetComponentInChildren<Collider2D>();
 
-            //If either collider fails to resolve, col ends up permanently
-            //null, which makes IsGrounded() always return false - and that
-            //silently breaks ALL movement (not just crouching), since both
-            //HandleGroundedInput and HandleMovementPhysics only act while
-            //grounded. Warn loudly here so that failure mode is obvious
-            //instead of looking like "nothing works" with no clue why.
             if (standingCollider == null)
                 Debug.LogWarning("Movement.standingBody has no Collider2D on it or its children.", this);
+
             if (crouchingCollider == null)
                 Debug.LogWarning("Movement.crouchingBody has no Collider2D on it or its children.", this);
         }
 
-        //Start standing.
+        // Start standing.
         SetCrouchingBody(false);
     }
 
@@ -91,21 +92,27 @@ public class Movement : MonoBehaviour
     {
         UpdateAttackStance(grounded);
 
-        //Runs unconditionally (even mid-attack) since it reads
-        //fighter.EffectiveStance, which stays locked to the current
-        //attack's own stance for its whole duration - see Fighter.cs.
+        // Runs unconditionally, even mid-attack.
         HandleCrouching();
 
-        if (!fighter.CanAct()) return;
+        if (!fighter.CanAct())
+        {
+            UpdateAnimation();
+            return;
+        }
 
         if (fighter.currentState == FighterState.Attacking)
         {
             moveInput = 0f;
+            UpdateAnimation();
             return;
         }
 
         HandleGroundedInput();
         HandleJumpInput();
+
+        // ANIMATION
+        UpdateAnimation();
     }
 
     void FixedUpdate()
@@ -114,8 +121,8 @@ public class Movement : MonoBehaviour
 
         grounded = IsGrounded();
 
-        //Runs every physics step regardless of FighterState so
-        //AttackStance stays correct even while an attack is in progress 
+        // Runs every physics step regardless of FighterState so
+        // AttackStance stays correct even while an attack is in progress.
         UpdateAttackStance(grounded);
 
         HandleMovementPhysics(grounded);
@@ -123,8 +130,8 @@ public class Movement : MonoBehaviour
         HandleJumpingPhysics(grounded);
     }
 
-    //State and stance are very different, Stance determines attack type
-    //and state is what the fighter is actually doing.
+    // State and stance are very different.
+    // Stance determines attack type and state is what the fighter is actually doing.
     void UpdateAttackStance(bool isGrounded)
     {
         if (!isGrounded)
@@ -145,12 +152,10 @@ public class Movement : MonoBehaviour
     {
         if (!grounded) return;
 
-        //Can't move during the dash
+        // Can't move during the dash
         if (fighter.currentState == FighterState.Dashing) return;
 
-        //Crouching posture is tracked via currentStance (see
-        //UpdateAttackStance) - not a separate FighterState - so this just
-        //needs to zero out movement while crouched.
+        // Crouching posture is tracked via currentStance.
         if (fighter.currentStance == AttackStance.Crouching)
         {
             moveInput = 0f;
@@ -161,20 +166,20 @@ public class Movement : MonoBehaviour
 
         float currentRawX = inputReader.Latest.rawX;
 
-        //Detect a fresh tap back or forwad
+        // Detect a fresh tap back or forward.
         if (currentRawX != 0f && lastRawX == 0f)
         {
             if (currentRawX < 0f)
             {
                 if (Time.time - lastLeftTapTime <= doubleTapWindow)
-                    StartDash(-1); // Dash Left
+                    StartDash(-1);
 
                 lastLeftTapTime = Time.time;
             }
             else if (currentRawX > 0f)
             {
                 if (Time.time - lastRightTapTime <= doubleTapWindow)
-                    StartDash(1); // Dash Right
+                    StartDash(1);
 
                 lastRightTapTime = Time.time;
             }
@@ -182,42 +187,53 @@ public class Movement : MonoBehaviour
 
         lastRawX = currentRawX;
 
-        //Normal movement
+        // Normal movement
         moveInput = currentRawX;
     }
 
     void HandleJumpInput()
     {
-        if (inputReader.Latest.isJumpPressed && fighter.EffectiveStance != AttackStance.Crouching && grounded)
+        if (inputReader.Latest.isJumpPressed
+            && fighter.EffectiveStance != AttackStance.Crouching
+            && grounded)
         {
             jumpPressed = true;
             fighter.SetState(FighterState.Jumping);
         }
+
         jumpHeld = inputReader.Latest.isJumpHeld;
     }
 
     void HandleMovementPhysics(bool isGrounded)
     {
-        //Handle Dash Physics
+        // Handle Dash Physics
         if (fighter.currentState == FighterState.Dashing)
         {
-            rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(
+                dashDirection * dashSpeed,
+                rb.linearVelocity.y
+            );
 
             dashTimer -= Time.fixedDeltaTime;
+
             if (dashTimer <= 0f)
             {
                 fighter.SetState(FighterState.Idle);
             }
-            //Skip normal movement during a dash
+
+            // Skip normal movement during a dash.
             return;
         }
 
-        //Horizontal movement
+        // Horizontal movement
         if (isGrounded)
         {
-            rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(
+                moveInput * speed,
+                rb.linearVelocity.y
+            );
 
-            //Only move if not attacking and not crouching
+            // Only move if not attacking and not crouching.
             if (fighter.currentState != FighterState.Attacking
                 && fighter.EffectiveStance != AttackStance.Crouching)
             {
@@ -235,75 +251,161 @@ public class Movement : MonoBehaviour
 
     void HandleJumpingPhysics(bool isGrounded)
     {
-        //Jumping
+        // Jumping
         if (jumpPressed && isGrounded)
         {
-            //Launch the player
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            // Launch the player
+            rb.linearVelocity = new Vector2(
+                rb.linearVelocity.x,
+                jumpForce
+            );
 
-            //Reset jumping so it doesn't double jump
+            // Reset jumping so it doesn't double jump.
             jumpPressed = false;
 
-            fighter.SetState(FighterState.Idle);
+            // Keep the fighter in the Jumping state.
+            fighter.SetState(FighterState.Jumping);
         }
 
-        //Jump shorter if button is tapped
+        // Jump shorter if button is tapped.
         if (rb.linearVelocity.y > 0f && !jumpHeld)
         {
-            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
+            rb.linearVelocity += Vector2.up
+                * Physics2D.gravity.y
+                * (lowJumpMultiplier - 1)
+                * Time.fixedDeltaTime;
         }
 
-        //Fall faster for better fighting game movement
+        // Fall faster for better fighting game movement.
         if (rb.linearVelocity.y < 0f)
         {
-            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
+            rb.linearVelocity += Vector2.up
+                * Physics2D.gravity.y
+                * (fallMultiplier - 1)
+                * Time.fixedDeltaTime;
+
             if (isGrounded)
             {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
+                rb.linearVelocity = new Vector2(
+                    rb.linearVelocity.x,
+                    0f
+                );
             }
         }
     }
 
-    //Swaps which hurtbox GameObject is active, instead of dynamically
-    //scaling one - same pattern as Hitbox.Activate/Deactivate. This
-    //sidesteps pivot/offset issues entirely (no compensation math needed),
-    //since both bodies are pre-authored at their correct fixed size/position
-    //rather than computed at runtime.
+    // Swaps which hurtbox GameObject is active.
     void HandleCrouching()
     {
-        bool shouldCrouch = fighter.EffectiveStance == AttackStance.Crouching;
+        bool shouldCrouch =
+            fighter.EffectiveStance == AttackStance.Crouching;
 
-        //Nothing changed, nothing to do.
+        // Nothing changed, nothing to do.
         if (shouldCrouch == isCrouching) return;
 
         SetCrouchingBody(shouldCrouch);
         isCrouching = shouldCrouch;
     }
 
-    //Activates the requested body and deactivates the other, and points
-    //col (used by IsGrounded) at whichever collider is now live.
+    // Activates the requested body and deactivates the other.
     void SetCrouchingBody(bool crouching)
     {
-        if (standingBody != null) standingBody.SetActive(!crouching);
-        if (crouchingBody != null) crouchingBody.SetActive(crouching);
+        if (standingBody != null)
+            standingBody.SetActive(!crouching);
 
-        col = crouching ? crouchingCollider : standingCollider;
+        if (crouchingBody != null)
+            crouchingBody.SetActive(crouching);
+
+        col = crouching
+            ? crouchingCollider
+            : standingCollider;
     }
 
     bool IsGrounded()
     {
         if (col == null) return false;
 
-        //Check if airborne due to non-jumping reasons, creates a ray that shoots downward to detect the ground layer
-        Vector2 origin = new Vector2(col.bounds.center.x, col.bounds.min.y);
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, groundCheckDistance, groundLayer);
+        // Check if airborne due to non-jumping reasons.
+        Vector2 origin = new Vector2(
+            col.bounds.center.x,
+            col.bounds.min.y
+        );
+
+        RaycastHit2D hit = Physics2D.Raycast(
+            origin,
+            Vector2.down,
+            groundCheckDistance,
+            groundLayer
+        );
+
         return hit.collider != null;
     }
 
     void StartDash(int direction)
     {
         fighter.SetState(FighterState.Dashing);
+
         dashDirection = direction;
         dashTimer = dashDuration;
+    }
+
+    // =========================================================
+    // ANIMATION
+    // =========================================================
+
+    void UpdateAnimation()
+    {
+        if (animator == null)
+            return;
+
+        // Don't let Movement override attack animations.
+        if (fighter.currentState == FighterState.Attacking)
+            return;
+
+       
+        if (fighter.currentStance == AttackStance.Crouching)
+        {
+            PlayAnimation("Crouch");
+        }
+
+        if (fighter.currentState == FighterState.Blockstun)
+        {
+            PlayAnimation("Blockstun");
+        }
+
+        if (fighter.currentState == FighterState.Hitstun)
+        {
+            PlayAnimation("Hitstun");
+        }
+
+        // Jumping will be added next.
+        if (fighter.currentState == FighterState.Jumping)
+            return;
+
+        // Dash will be added next.
+        if (fighter.currentState == FighterState.Dashing)
+            return;
+
+        // Walking
+        if (fighter.currentState == FighterState.Moving)
+        {
+            PlayAnimation("Walk");
+            return;
+        }
+
+        // Idle
+        if (fighter.currentState == FighterState.Idle
+            && fighter.currentStance == AttackStance.Standing)
+        {
+            PlayAnimation("Idle");
+        }
+    }
+
+    void PlayAnimation(string animationName)
+    {
+        if (animator.GetCurrentAnimatorStateInfo(0).IsName(animationName))
+            return;
+
+        animator.Play(animationName);
     }
 }

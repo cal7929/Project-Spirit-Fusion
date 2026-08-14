@@ -15,12 +15,13 @@ MonoBehaviour:
   attackName: Crouching L
   requiredStance: 1
   strength: 0
+  animationClip: {fileID: 7400000, guid: 30b1fe06145a96441bfa020ea3a8346c, type: 2}
   motionInput: 
   hitboxId: crouchL
   damage: 5
   hitstunFrames: 2
   hitKnockback: 4
-  type: 0
+  type: 1
   startupFrames: 4
   activeFrames: 3
   recoveryFrames: 2

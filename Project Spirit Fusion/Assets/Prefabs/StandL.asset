@@ -15,6 +15,7 @@ MonoBehaviour:
   attackName: Standing L
   requiredStance: 0
   strength: 0
+  animationClip: {fileID: 7400000, guid: 8d5d77a75aa8c434f87579c65c940657, type: 2}
   motionInput: 
   hitboxId: standL
   damage: 5

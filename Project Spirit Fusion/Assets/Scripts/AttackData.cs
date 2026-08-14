@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//Script that contains all the relevant info for a move in the game. 
+// Script that contains all the relevant info for a move in the game.
 [CreateAssetMenu(fileName = "New Attack", menuName = "Project_Spirit_Fusion/Attack Data")]
 public class AttackData : ScriptableObject
 {
@@ -18,6 +18,10 @@ public class AttackData : ScriptableObject
     public AttackStance requiredStance = AttackStance.Standing;
 
     public AttackStrength strength;
+
+    [Header("Animation")]
+    [Tooltip("Animation clip played when this attack starts.")]
+    public AnimationClip animationClip;
 
     [Tooltip("Leave empty for normals (button press only). Fill in with numpad notation for a special, ex: 236 for a quarter circle forward")]
     public string motionInput = "";
@@ -65,7 +69,7 @@ public class AttackData : ScriptableObject
 
     public bool IsProjectile => projectilePrefab != null;
 
-    //Derived frame thresholds used by AttackController to drive phase transitions.
+    // Derived frame thresholds used by AttackController to drive phase transitions.
     public int ActiveStartFrame => startupFrames;
     public int ActiveEndFrame => startupFrames + activeFrames;
     public int CancelEndFrame => startupFrames + activeFrames + cancelWindowFrames;

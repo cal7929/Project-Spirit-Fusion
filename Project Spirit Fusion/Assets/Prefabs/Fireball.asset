@@ -15,13 +15,14 @@ MonoBehaviour:
   attackName: Fireball
   requiredStance: 0
   strength: 0
+  animationClip: {fileID: 0}
   motionInput: 236
   hitboxId: 
   damage: 12
   hitstunFrames: 5
   hitKnockback: 3
   type: 0
-  startupFrames: 4
+  startupFrames: 10
   activeFrames: 3
   recoveryFrames: 2
   cancelWindowFrames: 2
