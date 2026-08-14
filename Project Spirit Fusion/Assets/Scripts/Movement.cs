@@ -380,7 +380,9 @@ public class Movement : MonoBehaviour
 
         // Jumping will be added next.
         if (fighter.currentState == FighterState.Jumping)
-            return;
+        {
+            PlayAnimation("Jump");
+        }
 
         // Dash will be added next.
         if (fighter.currentState == FighterState.Dashing)

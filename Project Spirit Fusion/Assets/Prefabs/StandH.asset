@@ -15,6 +15,7 @@ MonoBehaviour:
   attackName: Standing Heavy
   requiredStance: 0
   strength: 2
+  animationClip: {fileID: 7400000, guid: 8d5d77a75aa8c434f87579c65c940657, type: 2}
   motionInput: 
   hitboxId: standH
   damage: 18
