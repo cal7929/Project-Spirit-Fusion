@@ -31,7 +31,7 @@ public class Hitbox : MonoBehaviour
     //Deals the damage based on attack data
     void OnTriggerEnter2D(Collider2D other)
     {
-        Fighter targetFighter = other.GetComponent<Fighter>();
+        Fighter targetFighter = other.GetComponentInParent<Fighter>();
 
         //Attacks don't hit your own hitbox
         if (targetFighter == null) return;
@@ -46,6 +46,8 @@ public class Hitbox : MonoBehaviour
         targetFighter.TakeDamage(attackData.damage, attackData.hitstunFrames, knockback, attackData.type);
 
         if (destroyOnHit)
+        {
             Destroy(gameObject);
+        }
     }
 }
